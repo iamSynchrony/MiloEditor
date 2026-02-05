@@ -69,7 +69,7 @@ namespace MiloLib.Assets.Rnd
             public uint compressionType;
             public List<Vertex> vertices = new();
 
-            public Vertices Read(EndianReader reader, uint meshVersion)
+            public Vertices Read(EndianReader reader, uint meshVersion, DirectoryMeta parent)
             {
                 count = reader.ReadUInt32();
                 if (meshVersion >= 36)
@@ -80,18 +80,18 @@ namespace MiloLib.Assets.Rnd
                         vertexSize = reader.ReadUInt32();
                         compressionType = reader.ReadUInt32();
                     }
-                    ReadVertices(reader, meshVersion, isNextGen, compressionType);
+                    ReadVertices(reader, meshVersion, isNextGen, compressionType, parent);
                     return this;
                 }
                 else
                 {
-                    ReadVertices(reader, meshVersion, isNextGen, 0);
+                    ReadVertices(reader, meshVersion, isNextGen, 0, parent);
                 }
 
                 return this;
             }
 
-            public void Write(EndianWriter writer, uint meshVersion)
+            public void Write(EndianWriter writer, uint meshVersion, DirectoryMeta parent)
             {
                 writer.WriteUInt32((uint)vertices.Count);
                 if (meshVersion >= 36)
@@ -102,18 +102,18 @@ namespace MiloLib.Assets.Rnd
                         writer.WriteUInt32(vertexSize);
                         writer.WriteUInt32(compressionType);
                     }
-                    WriteVertices(writer, meshVersion, isNextGen, compressionType);
+                    WriteVertices(writer, meshVersion, isNextGen, compressionType, parent);
                     return;
                 }
                 else
                 {
-                    WriteVertices(writer, meshVersion, isNextGen, 0);
+                    WriteVertices(writer, meshVersion, isNextGen, 0, parent);
                 }
             }
 
             // TODO:
             // these read and write vertex functions are genuinely horrible. need to refactor these in the future so converting between Mesh versions can be done more reliably
-            public void ReadVertices(EndianReader reader, uint meshVersion, bool isNextGen, uint compressionType)
+            public void ReadVertices(EndianReader reader, uint meshVersion, bool isNextGen, uint compressionType, DirectoryMeta parent)
             {
                 vertices = new();
                 for (int i = 0; i < count; i++)
@@ -123,7 +123,7 @@ namespace MiloLib.Assets.Rnd
                     newVert.y = reader.ReadFloat();
                     newVert.z = reader.ReadFloat();
 
-                    if (meshVersion == 34)
+                    if (parent.platform != DirectoryMeta.Platform.Wii && meshVersion == 34)
                         newVert.w = reader.ReadFloat();
 
 
@@ -181,7 +181,7 @@ namespace MiloLib.Assets.Rnd
                         newVert.ny = reader.ReadFloat();
                         newVert.nz = reader.ReadFloat();
 
-                        if (meshVersion == 34)
+                        if (parent.platform != DirectoryMeta.Platform.Wii && meshVersion == 34)
                             newVert.nw = reader.ReadFloat();
 
                         if (meshVersion >= 38)
@@ -320,7 +320,7 @@ namespace MiloLib.Assets.Rnd
                 }
             }
 
-            public void WriteVertices(EndianWriter writer, uint meshVersion, bool isNextGen, uint compressionType)
+            public void WriteVertices(EndianWriter writer, uint meshVersion, bool isNextGen, uint compressionType, DirectoryMeta parent)
             {
                 foreach (var vertex in vertices)
                 {
@@ -330,7 +330,7 @@ namespace MiloLib.Assets.Rnd
                     writer.WriteFloat(vertex.z);
 
                     // Possible W
-                    if (meshVersion == 34)
+                    if (parent.platform != DirectoryMeta.Platform.Wii && meshVersion == 34)
                         writer.WriteFloat(vertex.w);
 
                     if (meshVersion <= 10)
@@ -385,7 +385,7 @@ namespace MiloLib.Assets.Rnd
                         writer.WriteFloat(vertex.ny);
                         writer.WriteFloat(vertex.nz);
 
-                        if (meshVersion == 34)
+                        if (parent.platform != DirectoryMeta.Platform.Wii && meshVersion == 34)
                             writer.WriteFloat(vertex.nw);
 
                         if (meshVersion >= 38)
@@ -747,7 +747,7 @@ namespace MiloLib.Assets.Rnd
             if (revision < 11)
                 unkInt1 = reader.ReadUInt32();
 
-            vertices = vertices.Read(reader, revision);
+            vertices = vertices.Read(reader, revision, parent);
 
             uint faceCount = reader.ReadUInt32();
             faces = new List<Face>();
@@ -932,7 +932,7 @@ namespace MiloLib.Assets.Rnd
             if (revision < 11)
                 writer.WriteUInt32(unkInt1);
 
-            vertices.Write(writer, revision);
+            vertices.Write(writer, revision, parent);
 
             writer.WriteUInt32((uint)faces.Count);
             foreach (Face face in faces)
