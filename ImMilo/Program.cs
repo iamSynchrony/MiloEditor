@@ -543,7 +543,7 @@ public static partial class Program
             {
                 currentScene.endian = settings.endianness;
                 currentScene.dirMeta.platform = settings.platform;
-                currentScene.Save(path, settings.compressionType, 2064U, Endian.LittleEndian, currentScene.endian);
+                currentScene.Save(path, settings.compressionType, null, Endian.LittleEndian, currentScene.endian);
             }
             catch (Exception e)
             {
@@ -563,7 +563,7 @@ public static partial class Program
                 // TODO: Find a better way to do this.
                 compression = MiloFile.Type.Uncompressed;
             }
-            currentScene.Save(null, compression, 2064U, Endian.LittleEndian, currentScene.endian);
+            currentScene.Save(null, compression, null, Endian.LittleEndian, currentScene.endian);
         }
         catch (Exception e)
         {
@@ -634,7 +634,7 @@ public static partial class Program
 
         // create a new entry
         DirectoryMeta.Entry entry = DirectoryMeta.Entry.CreateDirtyAssetFromBytes(assetType,
-            Path.GetFileName(path), fileBytes.ToList<byte>());
+            Path.GetFileName(path), fileBytes);
 
         // add the entry to the parent dir
         dir.entries.Add(entry);
@@ -681,14 +681,14 @@ public static partial class Program
             newEntry = new DirectoryMeta.Entry(entry.type, entry.name, entry.obj);
 
             // Using the same hack as in MiloEditor
-            var updatedBytes = entry.objBytes.ToArray().Concat(new byte[] { 0xAD, 0xDE, 0xAD, 0xDE })
+            var updatedBytes = entry.objBytes.Concat(new byte[] { 0xAD, 0xDE, 0xAD, 0xDE })
                 .ToArray();
             using (MemoryStream ms = new MemoryStream(updatedBytes))
             {
                 EndianReader reader = new EndianReader(ms, currentScene.endian);
                 parent.ReadEntry(reader, entry);
             }
-            entry.objBytes = updatedBytes.ToList();
+            entry.objBytes = updatedBytes;
         }
         else
         {

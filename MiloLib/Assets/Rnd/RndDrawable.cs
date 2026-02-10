@@ -1,4 +1,4 @@
-﻿using MiloLib.Classes;
+using MiloLib.Classes;
 using MiloLib.Utils;
 using System;
 using System.Collections.Generic;
@@ -95,44 +95,35 @@ namespace MiloLib.Assets.Rnd
             }
 
             if (standalone)
-                if ((reader.Endianness == Endian.BigEndian ? 0xADDEADDE : 0xDEADDEAD) != reader.ReadUInt32()) throw new Exception("Got to end of standalone asset but didn't find the expected end bytes, read likely did not succeed");
+                if ((reader.Endianness == Endian.BigEndian ? 0xADDEADDE : 0xDEADDEAD) != reader.ReadUInt32()) throw MiloLib.Exceptions.MiloAssetReadException.EndBytesNotFound(parent, entry, reader.BaseStream.Position);
 
 
             return this;
         }
 
-        public void Write(EndianWriter writer, bool standalone, bool skipMetadata = false)
+        public new void Write(EndianWriter writer, bool standalone, DirectoryMeta parent, DirectoryMeta.Entry? entry = null)
         {
             writer.WriteUInt32(BitConverter.IsLittleEndian ? (uint)((altRevision << 16) | revision) : (uint)((revision << 16) | altRevision));
-
-            if (revision != 1 && !skipMetadata)
-            {
-                objFields.Write(writer);
-            }
 
             writer.WriteBoolean(showing);
 
             if (revision < 2)
             {
-                writer.WriteUInt32((uint)drawables.Count);
-                if (drawables.Count > 0)
+                if (parent.revision <= 6)
                 {
-                    /*
-                    if (revision <= 6)
+                    writer.WriteUInt32((uint)drawablesNullTerminated.Count);
+                    foreach (var drawable in drawablesNullTerminated)
                     {
-                        foreach (var drawable in drawablesNullTerminated)
-                        {
-                            writer.WriteUTF8(drawable);
-                        }
+                        writer.WriteUTF8(drawable);
                     }
-                    else
-                    {
-                    */
+                }
+                else
+                {
+                    writer.WriteUInt32((uint)drawables.Count);
                     foreach (var drawable in drawables)
                     {
                         Symbol.Write(writer, drawable);
                     }
-                    //}
                 }
             }
 
@@ -155,7 +146,7 @@ namespace MiloLib.Assets.Rnd
             }
 
             if (standalone)
-                writer.WriteBlock(new byte[4] { 0xAD, 0xDE, 0xAD, 0xDE });
+                writer.WriteEndBytes();
         }
 
         public static RndDrawable New(ushort revision, ushort altRevision)

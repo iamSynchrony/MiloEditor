@@ -1,4 +1,4 @@
-﻿using MiloLib.Classes;
+using MiloLib.Classes;
 using MiloLib.Utils;
 using static MiloLib.Assets.Rnd.PropKey;
 
@@ -58,6 +58,14 @@ namespace MiloLib.Assets.Rnd
         [MaxVersion(3)]
         public List<ColorKey> colorKeys3 = new();
 
+        public List<List<Vec3Key>> vec3Keys1PerStage = new();
+        public List<List<Vec3Key>> vec3Keys2PerStage = new();
+        public List<List<Vec3Key>> vec3Keys3PerStage = new();
+
+        public List<List<SymbolKey>> symbolKeysPerStage = new();
+
+        private uint stageCount;
+
 
 
 
@@ -76,6 +84,58 @@ namespace MiloLib.Assets.Rnd
             anim = anim.Read(reader, parent, entry);
 
             material = Symbol.Read(reader);
+
+            if (revision < 7)
+            {
+                stageCount = reader.ReadUInt32();
+                for (int i = 0; i < stageCount; i++)
+                {
+                    if (revision != 0)
+                    {
+                        var stageVec3Keys1 = new List<Vec3Key>();
+                        uint vec3KeysCount1 = reader.ReadUInt32();
+                        for (int j = 0; j < vec3KeysCount1; j++)
+                        {
+                            Vec3Key vec3Key = new();
+                            vec3Key.Read(reader);
+                            stageVec3Keys1.Add(vec3Key);
+                        }
+                        vec3Keys1PerStage.Add(stageVec3Keys1);
+
+                        var stageVec3Keys2 = new List<Vec3Key>();
+                        uint vec3KeysCount2 = reader.ReadUInt32();
+                        for (int j = 0; j < vec3KeysCount2; j++)
+                        {
+                            Vec3Key vec3Key = new();
+                            vec3Key.Read(reader);
+                            stageVec3Keys2.Add(vec3Key);
+                        }
+                        vec3Keys2PerStage.Add(stageVec3Keys2);
+
+                        var stageVec3Keys3 = new List<Vec3Key>();
+                        uint vec3KeysCount3 = reader.ReadUInt32();
+                        for (int j = 0; j < vec3KeysCount3; j++)
+                        {
+                            Vec3Key vec3Key = new();
+                            vec3Key.Read(reader);
+                            stageVec3Keys3.Add(vec3Key);
+                        }
+                        vec3Keys3PerStage.Add(stageVec3Keys3);
+                    }
+                    if (revision > 1)
+                    {
+                        var stageSymbolKeys = new List<SymbolKey>();
+                        uint symbolKeysCount = reader.ReadUInt32();
+                        for (int j = 0; j < symbolKeysCount; j++)
+                        {
+                            SymbolKey symbolKey = new();
+                            symbolKey.Read(reader);
+                            stageSymbolKeys.Add(symbolKey);
+                        }
+                        symbolKeysPerStage.Add(stageSymbolKeys);
+                    }
+                }
+            }
 
             keysOwner = Symbol.Read(reader);
 
@@ -165,7 +225,7 @@ namespace MiloLib.Assets.Rnd
             }
 
             if (standalone)
-                if ((reader.Endianness == Endian.BigEndian ? 0xADDEADDE : 0xDEADDEAD) != reader.ReadUInt32()) throw new Exception("Got to end of standalone asset but didn't find the expected end bytes, read likely did not succeed");
+                if ((reader.Endianness == Endian.BigEndian ? 0xADDEADDE : 0xDEADDEAD) != reader.ReadUInt32()) throw MiloLib.Exceptions.MiloAssetReadException.EndBytesNotFound(parent, entry, reader.BaseStream.Position);
 
             return this;
         }
@@ -176,12 +236,54 @@ namespace MiloLib.Assets.Rnd
 
             if (revision > 5)
             {
-                base.objFields.Write(writer);
+                base.objFields.Write(writer, parent);
             }
 
             anim.Write(writer);
 
             Symbol.Write(writer, material);
+
+            if (revision < 7)
+            {
+                writer.WriteUInt32(stageCount);
+
+                for (int i = 0; i < stageCount; i++)
+                {
+                    if (revision != 0)
+                    {
+                        var stageKeys1 = i < vec3Keys1PerStage.Count ? vec3Keys1PerStage[i] : new List<Vec3Key>();
+                        writer.WriteUInt32((uint)stageKeys1.Count);
+                        foreach (Vec3Key vec3Key in stageKeys1)
+                        {
+                            vec3Key.Write(writer);
+                        }
+
+                        var stageKeys2 = i < vec3Keys2PerStage.Count ? vec3Keys2PerStage[i] : new List<Vec3Key>();
+                        writer.WriteUInt32((uint)stageKeys2.Count);
+                        foreach (Vec3Key vec3Key in stageKeys2)
+                        {
+                            vec3Key.Write(writer);
+                        }
+
+                        var stageKeys3 = i < vec3Keys3PerStage.Count ? vec3Keys3PerStage[i] : new List<Vec3Key>();
+                        writer.WriteUInt32((uint)stageKeys3.Count);
+                        foreach (Vec3Key vec3Key in stageKeys3)
+                        {
+                            vec3Key.Write(writer);
+                        }
+                    }
+
+                    if (revision > 1)
+                    {
+                        var stageSymKeys = i < symbolKeysPerStage.Count ? symbolKeysPerStage[i] : new List<SymbolKey>();
+                        writer.WriteUInt32((uint)stageSymKeys.Count);
+                        foreach (SymbolKey symbolKey in stageSymKeys)
+                        {
+                            symbolKey.Write(writer);
+                        }
+                    }
+                }
+            }
 
             Symbol.Write(writer, keysOwner);
 
@@ -262,7 +364,7 @@ namespace MiloLib.Assets.Rnd
             }
 
             if (standalone)
-                writer.WriteBlock(new byte[4] { 0xAD, 0xDE, 0xAD, 0xDE });
+                writer.WriteEndBytes();
         }
 
     }

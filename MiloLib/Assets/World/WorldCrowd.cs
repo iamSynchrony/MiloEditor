@@ -1,4 +1,4 @@
-﻿using MiloLib.Assets.Rnd;
+using MiloLib.Assets.Rnd;
 using MiloLib.Classes;
 using MiloLib.Utils;
 
@@ -57,8 +57,10 @@ namespace MiloLib.Assets.World
                 Symbol.Write(writer, character);
                 writer.WriteFloat(height);
                 writer.WriteFloat(density);
-                writer.WriteFloat(radius);
-                writer.WriteBoolean(useRandomColor);
+                if (revision > 1)
+                    writer.WriteFloat(radius);
+                if (revision > 8)
+                    writer.WriteBoolean(useRandomColor);
             }
 
             public override string ToString()
@@ -120,6 +122,8 @@ namespace MiloLib.Assets.World
         private uint charCount;
         public List<CharData> characters = new();
 
+        public List<List<OldMultiMeshInstance>> oldMultiMeshInstances = new();
+
         private List<uint> transformCount = new();
         public List<List<Matrix>> transforms = new();
 
@@ -170,6 +174,7 @@ namespace MiloLib.Assets.World
                         {
                             oldmm.Add(new OldMultiMeshInstance().Read(reader));
                         }
+                        oldMultiMeshInstances.Add(oldmm);
                     }
                 }
                 else
@@ -207,19 +212,107 @@ namespace MiloLib.Assets.World
 
 
             if (standalone)
-                if ((reader.Endianness == Endian.BigEndian ? 0xADDEADDE : 0xDEADDEAD) != reader.ReadUInt32()) throw new Exception("Got to end of standalone asset but didn't find the expected end bytes, read likely did not succeed");
+                if ((reader.Endianness == Endian.BigEndian ? 0xADDEADDE : 0xDEADDEAD) != reader.ReadUInt32()) throw MiloLib.Exceptions.MiloAssetReadException.EndBytesNotFound(parent, entry, reader.BaseStream.Position);
 
             return this;
         }
 
-        public override void Write(EndianWriter writer, bool standalone, DirectoryMeta parent, DirectoryMeta.Entry? entry)
+        public new void Write(EndianWriter writer, bool standalone, DirectoryMeta parent, DirectoryMeta.Entry? entry)
         {
             writer.WriteUInt32(BitConverter.IsLittleEndian ? (uint)(altRevision << 16 | revision) : (uint)(revision << 16 | altRevision));
 
-            base.Write(writer, false, parent, entry);
+            ((RndDrawable)this).Write(writer, false, parent, null);
+
+            Symbol.Write(writer, placementMesh);
+
+            if (revision < 3)
+                writer.WriteUInt32(unkInt1);
+
+            writer.WriteUInt32(num);
+
+            if (revision < 8)
+                writer.WriteBoolean(unkBool1);
+
+            charCount = (uint)characters.Count;
+            writer.WriteUInt32(charCount);
+            foreach (var charData in characters)
+            {
+                charData.Write(writer, revision);
+            }
+
+            if (revision > 6)
+                Symbol.Write(writer, environ);
+            if (revision > 9)
+                Symbol.Write(writer, environ3D);
+
+            if (revision > 1)
+            {
+                if (revision < 0xE)
+                {
+                    for (int i = 0; i < charCount; i++)
+                    {
+                        if (i < oldMultiMeshInstances.Count)
+                        {
+                            writer.WriteUInt32((uint)oldMultiMeshInstances[i].Count);
+                            foreach (var inst in oldMultiMeshInstances[i])
+                            {
+                                inst.Write(writer);
+                            }
+                        }
+                        else
+                        {
+                            writer.WriteUInt32(0);
+                        }
+                    }
+                }
+                else
+                {
+                    while (transformCount.Count < characters.Count)
+                    {
+                        transformCount.Add(0);
+                    }
+                    while (transforms.Count < characters.Count)
+                    {
+                        transforms.Add(new List<Matrix>());
+                    }
+                    
+                    for (int i = 0; i < charCount; i++)
+                    {
+                        if (i < transforms.Count)
+                        {
+                            transformCount[i] = (uint)transforms[i].Count;
+                        }
+                        else
+                        {
+                            transformCount[i] = 0;
+                        }
+                        
+                        writer.WriteUInt32(transformCount[i]);
+                        if (transformCount[i] > 0 && i < transforms.Count)
+                        {
+                            foreach (var transform in transforms[i])
+                            {
+                                transform.Write(writer);
+                            }
+                        }
+                    }
+                }
+            }
+
+            if (revision > 4)
+                writer.WriteUInt32(modifyStamp);
+            if (revision > 0xC)
+                writer.WriteBoolean(force3DCrowd);
+            if (revision > 5)
+                writer.WriteBoolean(show3DOnly);
+            if (revision > 0xB)
+                Symbol.Write(writer, focus);
+
+            if (revision != 0)
+                highlightable.Write(writer, false, parent, entry);
 
             if (standalone)
-                writer.WriteBlock(new byte[4] { 0xAD, 0xDE, 0xAD, 0xDE });
+                writer.WriteEndBytes();
         }
 
     }

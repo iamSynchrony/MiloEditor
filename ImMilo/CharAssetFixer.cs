@@ -10,29 +10,29 @@ namespace ImMilo;
 public static class CharAssetFixer
 {
     
-    private static List<byte> templateBytes = new();
+    private static byte[] templateBytes = Array.Empty<byte>();
 
     private static RndGroup AddTemplateTranslucentGroup(DirectoryMeta dir)
     {
         var assembly = typeof(CharAssetFixer).Assembly;
 
 
-        if (templateBytes.Count == 0)
+        if (templateBytes.Length == 0)
         {
             using (Stream s = assembly.GetManifestResourceStream("translucentGroupTemplate"))
             {
                 byte[] bytes = new byte[s.Length];
-            
+
                 s.ReadExactly(bytes, 0, bytes.Length);
-                templateBytes = bytes.ToList();
+                templateBytes = bytes;
             }
         }
-        
+
         var entry = DirectoryMeta.Entry.CreateDirtyAssetFromBytes("Group", "translucent.grp", templateBytes);
         entry.dirty = false; // this is probably stupid, whatever!
         dir.entries.Add(entry);
 
-        var groupObj = new RndGroup().Read(new EndianReader(new MemoryStream(templateBytes.ToArray()), Endian.BigEndian), false, dir, entry);
+        var groupObj = new RndGroup().Read(new EndianReader(new MemoryStream(templateBytes), Endian.BigEndian), false, dir, entry);
         entry.obj = groupObj;
         return groupObj;
     }
@@ -90,7 +90,7 @@ public static class CharAssetFixer
             compression = MiloFile.Type.Uncompressed;
         }
         
-        file.Save(newPath, compression, 2064U, Endian.LittleEndian, file.endian);
+        file.Save(newPath, compression, null, Endian.LittleEndian, file.endian);
     }
 
     public static void FixCharAssetFolder(string path)
@@ -98,13 +98,18 @@ public static class CharAssetFixer
         var files = Directory.GetFiles(path);
         var fixedDir = Path.Join(path, "fixed");
         Directory.CreateDirectory(fixedDir);
-        foreach (var filePath in files)
+        int progress = 0;
+        Parallel.ForEach(files, filePath =>
         {
-            Console.WriteLine($"Fixing {filePath}");
+            var count = Interlocked.Increment(ref progress);
+            lock (Console.Out)
+            {
+                Console.WriteLine($"({count}/{files.Length}) Fixing {filePath}");
+            }
             var filename = Path.GetFileName(filePath);
             var newPath = Path.Join(fixedDir, filename);
             FixCharAsset(new MiloFile(filePath), newPath);
-        }
+        });
     }
     
     public static void PromptCharAssetFix()
@@ -193,7 +198,7 @@ public static class CharAssetFixer
             compression = MiloFile.Type.Uncompressed;
         }
         
-        file.Save(newPath, compression, 2064U, Endian.LittleEndian, file.endian);
+        file.Save(newPath, compression, null, Endian.LittleEndian, file.endian);
     }
 
     public static void FixInstrumentFolder(string path)
@@ -201,13 +206,18 @@ public static class CharAssetFixer
         var files = Directory.GetFiles(path);
         var fixedDir = Path.Join(path, "fixed");
         Directory.CreateDirectory(fixedDir);
-        foreach (var filePath in files)
+        int progress = 0;
+        Parallel.ForEach(files, filePath =>
         {
-            Console.WriteLine($"Fixing {filePath}");
+            var count = Interlocked.Increment(ref progress);
+            lock (Console.Out)
+            {
+                Console.WriteLine($"({count}/{files.Length}) Fixing {filePath}");
+            }
             var filename = Path.GetFileName(filePath);
             var newPath = Path.Join(fixedDir, filename);
             FixInstrument(new MiloFile(filePath), newPath);
-        }
+        });
     }
 
     public static void PromptInstrumentFix()

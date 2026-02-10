@@ -1,6 +1,15 @@
 ﻿using System;
+using System.Collections.Concurrent;
+using System.Collections.Generic;
+using System.Diagnostics;
+using System.IO;
+using System.Linq;
+using System.Reflection;
+using System.Text;
+using System.Threading;
 using MiloLib;
 using MiloLib.Assets;
+using MiloLib.Utils;
 
 class Program
 {
@@ -70,11 +79,198 @@ class Program
                 ExtractCommand(extractFilePath, assetName, outputPath, extractDirectory);
                 break;
 
+            case "scan-revisions":
+                if (args.Length < 3)
+                {
+                    Console.WriteLine("Usage: MiloUtil scan-revisions <game_identifier> <folderPath>");
+                    return;
+                }
+                ScanRevisionsCommand(args[1], args[2]);
+                break;
+
             default:
                 Console.WriteLine($"Unknown command: {command}");
                 ShowHelp();
                 break;
         }
+    }
+
+    // Caches FieldInfo for performance
+    private static readonly Dictionary<Type, (FieldInfo?, FieldInfo?)> _revisionFieldCache = new();
+
+    static void ScanRevisionsCommand(string gameIdentifier, string folderPath)
+    {
+        if (!Directory.Exists(folderPath))
+        {
+            Console.WriteLine($"Error: Directory not found at '{folderPath}'");
+            return;
+        }
+
+        Console.WriteLine($"Scanning for 'milo_*' files in '{folderPath}'...");
+        var filesToProcess = Directory.EnumerateFiles(folderPath, "*", SearchOption.AllDirectories)
+            .Where(f => Path.GetExtension(f).StartsWith(".milo_"))
+            .ToArray();
+
+        if (filesToProcess.Length == 0)
+        {
+            Console.WriteLine("No Milo files found.");
+            return;
+        }
+
+        var revisionMap = new ConcurrentDictionary<string, ConcurrentBag<(ushort, ushort)>>();
+        var stopwatch = Stopwatch.StartNew();
+        int progress = 0;
+
+        Console.WriteLine($"Found {filesToProcess.Length} files. Starting revision scan...");
+
+        Parallel.ForEach(filesToProcess, file =>
+        {
+            var count = Interlocked.Increment(ref progress);
+            lock (Console.Out)
+            {
+                Console.WriteLine($"  ({count}/{filesToProcess.Length}) Processing {file}");
+            }
+            try
+            {
+                var miloFile = new MiloFile(file);
+
+                var localMap = new Dictionary<string, HashSet<(ushort, ushort)>>();
+                TraverseAndCollectRevisions(miloFile.dirMeta, localMap);
+                foreach (var kvp in localMap)
+                {
+                    var bag = revisionMap.GetOrAdd(kvp.Key, _ => new ConcurrentBag<(ushort, ushort)>());
+                    foreach (var item in kvp.Value)
+                    {
+                        bag.Add(item);
+                    }
+                }
+            }
+            catch (Exception ex)
+            {
+                lock (Console.Out)
+                {
+                    Console.ForegroundColor = ConsoleColor.Red;
+                    Console.WriteLine($"    ERROR processing file: {ex.Message}");
+                    Console.ResetColor();
+                }
+            }
+        });
+
+        stopwatch.Stop();
+        Console.WriteLine($"\nScan complete in {stopwatch.Elapsed.TotalSeconds:F2} seconds.");
+
+        var finalMap = new Dictionary<string, HashSet<(ushort, ushort)>>();
+        foreach (var kvp in revisionMap)
+        {
+            finalMap[kvp.Key] = new HashSet<(ushort, ushort)>(kvp.Value);
+        }
+
+        string outputFileName = $"GameRevisions_{gameIdentifier}.cs";
+        GenerateCSharpSourceFile(gameIdentifier, finalMap, outputFileName);
+
+        Console.WriteLine($"C# source file with revision data has been saved to:");
+        Console.ForegroundColor = ConsoleColor.Cyan;
+        Console.WriteLine(Path.Combine(AppContext.BaseDirectory, outputFileName));
+        Console.ResetColor();
+    }
+
+    static void TraverseAndCollectRevisions(DirectoryMeta dir, Dictionary<string, HashSet<(ushort, ushort)>> revisionMap)
+    {
+        if (dir == null) return;
+
+        if (dir.directory != null)
+        {
+            CollectRevision(dir.directory, revisionMap);
+        }
+
+        foreach (var entry in dir.entries)
+        {
+            if (entry.obj != null)
+            {
+                CollectRevision(entry.obj, revisionMap);
+            }
+
+            if (entry.dir != null)
+            {
+                TraverseAndCollectRevisions(entry.dir, revisionMap);
+            }
+        }
+
+        if (dir.directory is ObjectDir objDir)
+        {
+            foreach (var inlineDir in objDir.inlineSubDirs)
+            {
+                TraverseAndCollectRevisions(inlineDir, revisionMap);
+            }
+        }
+    }
+
+    static void CollectRevision(object obj, Dictionary<string, HashSet<(ushort, ushort)>> revisionMap)
+    {
+        if (obj == null) return;
+
+        var type = obj.GetType();
+        if (!_revisionFieldCache.TryGetValue(type, out var fields))
+        {
+            const BindingFlags flags = BindingFlags.Instance | BindingFlags.Public | BindingFlags.NonPublic;
+            fields = (type.GetField("revision", flags), type.GetField("altRevision", flags));
+            _revisionFieldCache[type] = fields;
+        }
+
+        var (revField, altRevField) = fields;
+
+        if (revField != null && revField.FieldType == typeof(ushort))
+        {
+            ushort revision = (ushort)revField.GetValue(obj);
+            ushort altRevision = (altRevField != null && altRevField.FieldType == typeof(ushort)) ? (ushort)altRevField.GetValue(obj) : (ushort)0;
+
+            string typeName = type.Name;
+
+            if (!revisionMap.ContainsKey(typeName))
+            {
+                revisionMap[typeName] = new HashSet<(ushort, ushort)>();
+            }
+            revisionMap[typeName].Add((revision, altRevision));
+        }
+    }
+
+    static void GenerateCSharpSourceFile(string gameIdentifier, Dictionary<string, HashSet<(ushort, ushort)>> revisionMap, string outputFileName)
+    {
+        var sb = new StringBuilder();
+        sb.AppendLine("// Auto-generated by MiloUtil scan-revisions command");
+        sb.AppendLine($"// Game: {gameIdentifier}");
+        sb.AppendLine($"// Timestamp: {DateTime.Now}");
+        sb.AppendLine();
+        sb.AppendLine("using System.Collections.Generic;");
+        sb.AppendLine();
+        sb.AppendLine($"namespace MiloLib.Revisions.{gameIdentifier}");
+        sb.AppendLine("{");
+        sb.AppendLine($"    public static class GameRevisions_{gameIdentifier}");
+        sb.AppendLine("    {");
+        sb.AppendLine("        public static readonly Dictionary<string, List<(ushort, ushort)>> Revisions = new()");
+        sb.AppendLine("        {");
+
+        foreach (var kvp in revisionMap.OrderBy(kv => kv.Key))
+        {
+            sb.Append($"            [\"{kvp.Key}\"] = new() {{ ");
+            var revisions = kvp.Value.OrderBy(t => t.Item1).ThenBy(t => t.Item2).ToList();
+            for (int i = 0; i < revisions.Count; i++)
+            {
+                var (rev, altRev) = revisions[i];
+                sb.Append($"({rev}, {altRev})");
+                if (i < revisions.Count - 1)
+                {
+                    sb.Append(", ");
+                }
+            }
+            sb.AppendLine(" },");
+        }
+
+        sb.AppendLine("        };");
+        sb.AppendLine("    }");
+        sb.AppendLine("}");
+
+        File.WriteAllText(outputFileName, sb.ToString());
     }
 
     /// <summary>
@@ -200,7 +396,7 @@ class Program
                 Console.WriteLine($"Found asset '{asset}' of type '{entry.type}' in directory '{miloFile.dirMeta.name}'");
 
                 // extract the asset
-                System.IO.File.WriteAllBytes(outputPath, entry.objBytes.ToArray());
+                System.IO.File.WriteAllBytes(outputPath, entry.objBytes);
 
                 Console.WriteLine($"Extracted asset to: {outputPath}");
                 return;
@@ -220,7 +416,7 @@ class Program
                         Console.WriteLine($"Found asset '{asset}' of type '{entry.type}' in inlined subdirectory '{dir.name}'");
 
                         // extract the asset
-                        System.IO.File.WriteAllBytes(outputPath, entry.objBytes.ToArray());
+                        System.IO.File.WriteAllBytes(outputPath, entry.objBytes);
 
                         Console.WriteLine($"Extracted asset to: {outputPath}");
                         return;
@@ -244,7 +440,7 @@ class Program
                             Console.WriteLine($"Found asset '{asset}' of type '{subEntry.type}' in directory '{entry.name}'");
 
                             // extract the asset
-                            System.IO.File.WriteAllBytes(outputPath, subEntry.objBytes.ToArray());
+                            System.IO.File.WriteAllBytes(outputPath, subEntry.objBytes);
 
                             Console.WriteLine($"Extracted asset to: {outputPath}");
                             return;
@@ -264,7 +460,7 @@ class Program
                                     Console.WriteLine($"Found asset '{asset}' of type '{subEntry.type}' in inlined subdirectory '{dir.name}' of directory '{entry.name}'");
 
                                     // extract the asset
-                                    System.IO.File.WriteAllBytes(outputPath, subEntry.objBytes.ToArray());
+                                    System.IO.File.WriteAllBytes(outputPath, subEntry.objBytes);
 
                                     Console.WriteLine($"Extracted asset to: {outputPath}");
                                     return;
@@ -304,6 +500,7 @@ class Program
         Console.WriteLine("  rename <filePath> <oldName> <newName> [--directory <directory>]  Renames an asset in a Milo scene");
         Console.WriteLine("  extract <filePath> <asset> <outputPath> [--directory <directory>]  Extracts an asset from a Milo scene");
         Console.WriteLine("  uncompress <filePath>          Opens a Milo scene and resaves it as uncompressed.");
+        Console.WriteLine("  scan-revisions <game> <path>   Recursively scans a folder of milo files for asset revisions and outputs a C# source file.");
         Console.WriteLine();
         Console.WriteLine("Options:");
         Console.WriteLine("  --directory <directory>        Specify the directory inside the Milo scene (default: the root directory)");

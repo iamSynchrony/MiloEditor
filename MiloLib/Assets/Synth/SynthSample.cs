@@ -1,4 +1,4 @@
-﻿using MiloLib.Utils;
+using MiloLib.Utils;
 using MiloLib.Classes;
 
 namespace MiloLib.Assets
@@ -108,7 +108,9 @@ namespace MiloLib.Assets
 
                 writer.WriteUInt32(sampleCount);
                 writer.WriteUInt32(sampleRate);
-                writer.WriteUInt32((uint)samples.Count);
+                if (readSamples)
+                    samplesSize = (uint)samples.Count;
+                writer.WriteUInt32(samplesSize);
 
                 writer.WriteBoolean(readSamples);
 
@@ -177,7 +179,7 @@ namespace MiloLib.Assets
 
 
             if (standalone)
-                if ((reader.Endianness == Endian.BigEndian ? 0xADDEADDE : 0xDEADDEAD) != reader.ReadUInt32()) throw new Exception("Got to end of standalone asset but didn't find the expected end bytes, read likely did not succeed");
+                if ((reader.Endianness == Endian.BigEndian ? 0xADDEADDE : 0xDEADDEAD) != reader.ReadUInt32()) throw MiloLib.Exceptions.MiloAssetReadException.EndBytesNotFound(parent, entry, reader.BaseStream.Position);
 
             return this;
         }
@@ -187,7 +189,7 @@ namespace MiloLib.Assets
             writer.WriteUInt32(BitConverter.IsLittleEndian ? (uint)((altRevision << 16) | revision) : (uint)((revision << 16) | altRevision));
 
             if (revision > 1)
-                objFields.Write(writer);
+                objFields.Write(writer, parent);
 
             Symbol.Write(writer, file);
 
@@ -210,7 +212,7 @@ namespace MiloLib.Assets
             }
 
             if (standalone)
-                writer.WriteBlock(new byte[4] { 0xAD, 0xDE, 0xAD, 0xDE });
+                writer.WriteEndBytes();
         }
     }
 }

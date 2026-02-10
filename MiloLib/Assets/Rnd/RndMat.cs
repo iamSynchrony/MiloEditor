@@ -125,131 +125,170 @@ namespace MiloLib.Assets.Rnd
         [Name("Base Color"), Description("Base material color")]
         public HmxColor4 color = new HmxColor4(1f, 1f, 1f, 1f);
 
-        [Name("Pre-Lit"), Description("Use vertex color and alpha for base or ambient")]
-        public bool preLit;
-
-        [Name("Use Environment"), Description("Modulate with environment ambient and lightsReal")]
+        [Name("Use Environment"), Description("Modulate with environment ambient and lightsReal"), MinVersion(22)]
         public bool useEnviron;
 
-        [Name("Z-Buffer Mode"), Description("How to read and write z-buffer")]
+        [Name("Pre-Lit"), Description("Use vertex color and alpha for base or ambient"), MinVersion(22)]
+        public bool preLit;
+
+        [Name("Z-Buffer Mode"), Description("How to read and write z-buffer"), MinVersion(22)]
         public ZMode zMode;
 
-        [Name("Alpha Cut"), Description("Cut zero alpha pixels from z-buffer")]
+        [Name("Alpha Cut"), Description("Cut zero alpha pixels from z-buffer"), MinVersion(22)]
         public bool alphaCut;
 
-        [Name("Alpha Threshold"), Description("Alpha level below which gets cut. Ranges from 0 to 255.")]
+        [Name("Alpha Threshold"), Description("Alpha level below which gets cut. Ranges from 0 to 255."), MinVersion(38)]
         public int alphaThreshold;
 
-        [Name("Alpha Write"), Description("Write pixel alpha to screen")]
+        [Name("Alpha Write"), Description("Write pixel alpha to screen"), MinVersion(22)]
         public bool alphaWrite;
 
-        [Name("Texture Coordinate Generation"), Description("How to generate texture coordinates")]
+        [Name("Texture Coordinate Generation"), Description("How to generate texture coordinates"), MinVersion(22)]
         public TexGen texGen;
 
-        [Name("Texture Mapping Mode"), Description("Texture mapping mode")]
+        [Name("Texture Mapping Mode"), Description("Texture mapping mode"), MinVersion(22)]
         public TexWrap texWrap;
 
-        [Name("Texture Transform"), Description("Transform for coordinate generation")]
+        [Name("Texture Transform"), Description("Transform for coordinate generation"), MinVersion(22)]
         public Matrix texXfm = new Matrix();
 
-        [Name("Diffuse Texture"), Description("Base texture map, modulated with color and alpha")]
+        [Name("Diffuse Texture"), Description("Base texture map, modulated with color and alpha"), MinVersion(22)]
         public Symbol diffuseTex = new(0, "");
 
-        [Name("Next Pass"), Description("Next material for object")]
+        [Name("Next Pass"), Description("Next material for object"), MinVersion(22)]
         public Symbol nextPass = new(0, "");
 
-        [Name("Intensify"), Description("Double the intensity of base map")]
+        [Name("Intensify"), Description("Double the intensity of base map"), MinVersion(22)]
         public bool intensify;
 
-        [Name("Cull"), Description("Cull backface polygons")]
+        [Name("Cull"), Description("Cull backface polygons"), MinVersion(22)]
         public bool cull;
 
-        [Name("Emissive Multiplier"), Description("Multiplier to apply to emission")]
+        [Name("Emissive Multiplier"), Description("Multiplier to apply to emission"), MinVersion(22)]
         public float emissiveMultiplier;
 
-        [Name("Specular RGB"), Description("Color to use when not driven by texture")]
+        [Name("Specular RGB"), Description("Color to use when not driven by texture"), MinVersion(22)]
         public HmxColor3 specularRGB = new HmxColor3();
 
-        [Name("Specular Power"), Description("Power to use when not driven by texture")]
+        [Name("Specular Power"), Description("Power to use when not driven by texture"), MinVersion(22)]
         public float specularPower;
 
-        [Name("Normal Map"), Description("Texture map to define lighting normals")]
+        [Name("Normal Map"), Description("Texture map to define lighting normals"), MinVersion(22)]
         public Symbol normalMap = new Symbol(0, "");
 
-        [Name("Emissive Map"), Description("Map for self illumination")]
+        [Name("Emissive Map"), Description("Map for self illumination"), MinVersion(22)]
         public Symbol emissiveMap = new(0, "");
 
-        [Name("Specular Map"), Description("Texture map for specular color and power")]
+        [Name("Specular Map"), Description("Texture map for specular color and power"), MinVersion(22)]
         public Symbol specularMap = new Symbol(0, "");
 
+        [MinVersion(22), MaxVersion(50)]
         public Symbol unkSymbol2 = new Symbol(0, "");
 
-        [Name("Environment Map"), Description("Cube texture for reflections. Does not apply to particles")]
+        [Name("Environment Map"), Description("Cube texture for reflections. Does not apply to particles"), MinVersion(22)]
         public Symbol environMap = new Symbol(0, "");
 
-        public ushort unkShort;
+        [MinVersion(61)]
+        public bool unkBool_0x3C;
+        [MinVersion(67)]
+        public bool unkBool_0x42;
 
-        [Name("Per Pixel Lit"), Description("Use per-pixel lighting")]
+        [Name("Per Pixel Lit"), Description("Use per-pixel lighting"), MinVersion(26)]
         public bool perPixelLit;
 
+        [MinVersion(27), MaxVersion(49)]
         public bool unkBool1;
 
-        [Name("Stencil Mode"), Description("How to read and write the stencil buffer")]
+        [Name("Stencil Mode"), Description("How to read and write the stencil buffer"), MinVersion(28)]
         public StencilMode stencilMode;
 
-        [Name("Fur"), Description("Use fur shader")]
+        [MinVersion(29), MaxVersion(40)]
+        public Symbol unkSym_29_40 = new Symbol(0, "");
+
+        [Name("Fur"), Description("Use fur shader"), MinVersion(22)]
         public Symbol fur = new Symbol(0, "");
 
-        [Name("De-Normal"), Description("Amount to diminish normal map bumpiness, 0 is neutral, 1 is no bumps, -1 exaggerates")]
+        [MinVersion(34), MaxVersion(48)]
+        public bool unkBool2;
+        [MinVersion(34), MaxVersion(48)]
+        public HmxColor3 unkColor3 = new();
+        [MinVersion(34), MaxVersion(48)]
+        public float unkFloat3;
+        [MinVersion(35), MaxVersion(48)]
+        public Symbol unkSym3 = new Symbol(0, "");
+
+        [Name("De-Normal"), Description("Amount to diminish normal map bumpiness, 0 is neutral, 1 is no bumps, -1 exaggerates"), MinVersion(36)]
         public float deNormal;
 
-        [Name("Anisotropy"), Description("Specular power in downward (strand) direction, 0 to disable")]
+        [Name("Anisotropy"), Description("Specular power in downward (strand) direction, 0 to disable"), MinVersion(36)]
         public float anisotropy;
 
-        [Name("Normal Detail Tiling"), Description("Texture tiling scale for the detail map")]
+        [MinVersion(39), MaxVersion(41)]
+        public bool unkBool_normalDetail;
+
+        [Name("Normal Detail Tiling"), Description("Texture tiling scale for the detail map"), MinVersion(39)]
         public float normalDetailTiling;
 
-        [Name("Normal Detail Strength"), Description("Strength of the detail map bumpiness")]
+        [Name("Normal Detail Strength"), Description("Strength of the detail map bumpiness"), MinVersion(39)]
         public float normalDetailStrength;
 
-        [Name("Normal Detail Map"), Description("Detail map texture")]
+        [MinVersion(39), MaxVersion(41)]
+        public int unkInt_normalDetail;
+        [MinVersion(39), MaxVersion(41)]
+        public HmxColor4 unkColor_normalDetail = new HmxColor4();
+
+        [Name("Normal Detail Map"), Description("Detail map texture"), MinVersion(39)]
         public Symbol normalDetailMap = new Symbol(0, "");
 
-        [Name("Point Lights Enabled"), Description("Is the Mat lit with point lightsReal?")]
+        [MinVersion(39), MaxVersion(41)]
+        public Symbol unkSym_normalDetail = new Symbol(0, "");
+
+        [Name("Point Lights Enabled"), Description("Is the Mat lit with point lightsReal?"), MinVersion(43)]
         public bool pointLights;
 
-        [Name("Projected Lights"), Description("Is the Mat lit with projected lights?")]
+        [MinVersion(43), MaxVersion(44)]
+        public int pointLightsInt;
+
+        [Name("Projected Lights"), Description("Is the Mat lit with projected lights?"), MinVersion(43), MaxVersion(62)]
         public bool projLights;
 
-        [Name("Fog Enabled"), Description("Is the Mat affected by fog?")]
+        [Name("Fog Enabled"), Description("Is the Mat affected by fog?"), MinVersion(43)]
         public bool fog;
 
-        [Name("Fadeout Enabled"), Description("Is the Mat affected its Environment's fade_out?")]
+        [Name("Fadeout Enabled"), Description("Is the Mat affected its Environment's fade_out?"), MinVersion(43)]
         public bool fadeout;
 
-        [Name("Color Adjust Enabled"), Description("Is the Mat affected its Environment's color adjust?")]
+        [MinVersion(44), MaxVersion(45)]
+        public bool unkBool_44_45;
+
+        [Name("Color Adjust Enabled"), Description("Is the Mat affected its Environment's color adjust?"), MinVersion(47)]
         public bool colorAdjust;
 
-        [Name("Rim RGB"), Description("Rim lighting color. If a rim texture is present, this color is multiplied by the rim texture RGB color.")]
+        [Name("Rim RGB"), Description("Rim lighting color. If a rim texture is present, this color is multiplied by the rim texture RGB color."), MinVersion(48)]
         public HmxColor3 rimRGB = new HmxColor3();
 
-        [Name("Rim Power"), Description("Rim lighting power. This is the sharpness of the wrap-around effect; higher numbers result in a sharper rim lighting effect. If a rim texture is present, this value is multiplied by the rim texture alpha channel.")]
+        [Name("Rim Power"), Description("Rim lighting power. This is the sharpness of the wrap-around effect; higher numbers result in a sharper rim lighting effect. If a rim texture is present, this value is multiplied by the rim texture alpha channel."), MinVersion(48)]
         public float rimPower;
 
-        [Name("Rim Map"), Description("Texture map that defines the rim lighting color (in the RGB channels) and power (in the Alpha channel).")]
+        [Name("Rim Map"), Description("Texture map that defines the rim lighting color (in the RGB channels) and power (in the Alpha channel)."), MinVersion(48)]
         public Symbol rimMap = new Symbol(0, "");
 
-        [Name("Rim Always Show"), Description("When enabled, this causes the rim effect to highlight the undersides of meshes")]
+        [Name("Rim Always Show"), Description("When enabled, this causes the rim effect to highlight the undersides of meshes"), MinVersion(48)]
         public bool rimAlwaysShow;
 
-        [Name("Screen Aligned"), Description("Projected material from camera's POV")]
+        [Name("Screen Aligned"), Description("Projected material from camera's POV"), MinVersion(49)]
         public bool screenAligned;
 
-        [Name("Shader Variation"), Description("Select a variation on the shader to enable a new range of rendering features.")]
+        [MinVersion(50), MaxVersion(50)]
+        public bool unkBool_shaderVar50;
+
+        [Name("Shader Variation"), Description("Select a variation on the shader to enable a new range of rendering features."), MinVersion(51)]
         public ShaderVariation shaderVariation;
 
+        [MinVersion(51)]
         public HmxColor3 specular2RGB = new HmxColor3();
 
+        [MinVersion(51)]
         public float specular2Power;
 
         public float unkFloat;
@@ -258,15 +297,16 @@ namespace MiloLib.Assets.Rnd
 
         public Symbol alphaMask = new Symbol(0, "");
 
+        [MinVersion(63)]
         public MatPerfSettings perfSettings = new MatPerfSettings();
 
-        [Name("Refract Enabled"), Description("When enabled, this material will refract the screen under the material")]
+        [Name("Refract Enabled"), Description("When enabled, this material will refract the screen under the material"), MinVersion(64)]
         public bool refractEnabled;
 
-        [Name("Refract Strength"), Description("The scale of the refraction of the screen under the material. Ranges from 0 to 100.")]
+        [Name("Refract Strength"), Description("The scale of the refraction of the screen under the material. Ranges from 0 to 100."), MinVersion(64)]
         public float refractStrength;
 
-        [Name("Refract Normal Map"), Description("This is a normal map used to distort the screen under the material. If none is specified, the regular normal map will be used.")]
+        [Name("Refract Normal Map"), Description("This is a normal map used to distort the screen under the material. If none is specified, the regular normal map will be used."), MinVersion(64)]
         public Symbol refractNormalMap = new Symbol(0, "");
 
         public byte unkbool;
@@ -276,37 +316,56 @@ namespace MiloLib.Assets.Rnd
 
         public HmxColor4 unkColor = new HmxColor4(1f, 1f, 1f, 1f);
 
+        [MinVersion(52), MaxVersion(52)]
         public bool unkBool;
 
         public Symbol unkSym = new Symbol(0, "");
 
         public Symbol unkSym1 = new Symbol(0, "");
 
+        [MinVersion(54), MaxVersion(61)]
         public Symbol unkSym2 = new Symbol(0, "");
 
+        [MinVersion(53), MaxVersion(59)]
         public HmxColor4 unkColor2 = new HmxColor4();
 
+        [MinVersion(60), MaxVersion(67)]
         private uint colorsCount;
+        [MinVersion(60), MaxVersion(67)]
         public List<HmxColor4> colors = new();
 
+        [MinVersion(10), MaxVersion(21)]
         private uint textureCount;
+        [MinVersion(10), MaxVersion(21)]
         public List<TextureEntry> textures = new();
 
+        [MinVersion(56), MaxVersion(56)]
         public int unkInt1;
+        [MinVersion(56), MaxVersion(56)]
         public int unkInt2;
+        [MinVersion(53), MaxVersion(67)]
         public int unkInt3;
 
-        public bool unkBool2;
-        public HmxColor3 unkColor3 = new();
-        public float unkFloat3;
+        [MaxVersion(21)]
+        public byte unkByte1;
 
-        public Symbol unkSym3 = new Symbol(0, "");
+        [MaxVersion(21)]
+        public ushort unkShort2;
+        [MaxVersion(21)]
+        public ushort unkShort3;
+        [MaxVersion(21)]
+        public ushort unkShort4;
+
+        [MaxVersion(21)]
+        public int unkInt4;
+        [MaxVersion(21)]
+        public uint unkUInt1;
 
 
 
 
 
-        public RndMat Read(EndianReader reader, bool standalone, DirectoryMeta parent, DirectoryMeta.Entry entry)
+		public RndMat Read(EndianReader reader, bool standalone, DirectoryMeta parent, DirectoryMeta.Entry entry)
         {
             uint combinedRevision = reader.ReadUInt32();
             if (BitConverter.IsLittleEndian) (revision, altRevision) = ((ushort)(combinedRevision & 0xFFFF), (ushort)((combinedRevision >> 16) & 0xFFFF));
@@ -331,22 +390,22 @@ namespace MiloLib.Assets.Rnd
 
             if (revision <= 21)
             {
-                reader.ReadByte();
-                reader.ReadUInt16();
-                reader.ReadInt32();
-                reader.ReadUInt16();
-                reader.ReadUInt32();
-                reader.ReadUInt16();
+                unkByte1 = reader.ReadByte();
+				unkShort2 = reader.ReadUInt16();
+                unkInt4 = reader.ReadInt32();
+                unkShort3 = reader.ReadUInt16();
+                unkUInt1 = reader.ReadUInt32();
+                unkShort4 = reader.ReadUInt16();
 
                 if (standalone)
                 {
-                    if ((reader.Endianness == Endian.BigEndian ? 0xADDEADDE : 0xDEADDEAD) != reader.ReadUInt32()) throw new Exception("Got to end of standalone asset but didn't find the expected end bytes, read likely did not succeed");
+                    if ((reader.Endianness == Endian.BigEndian ? 0xADDEADDE : 0xDEADDEAD) != reader.ReadUInt32()) throw MiloLib.Exceptions.MiloAssetReadException.EndBytesNotFound(parent, entry, reader.BaseStream.Position);
                 }
                 return this;
             }
 
-            preLit = reader.ReadBoolean();
             useEnviron = reader.ReadBoolean();
+            preLit = reader.ReadBoolean();
             zMode = (ZMode)reader.ReadInt32();
             alphaCut = reader.ReadBoolean();
             if (revision > 0x25)
@@ -373,15 +432,17 @@ namespace MiloLib.Assets.Rnd
 
             environMap = Symbol.Read(reader);
 
-            if (revision > 25)
+            if (revision > 60)
             {
-                if (revision == 68)
+                unkBool_0x3C = reader.ReadBoolean();
+                if (revision > 66)
                 {
-                    unkShort = reader.ReadUInt16();
+                    unkBool_0x42 = reader.ReadBoolean();
                 }
             }
 
-            perPixelLit = reader.ReadBoolean();
+            if (revision > 25)
+                perPixelLit = reader.ReadBoolean();
             if (revision >= 27 && revision < 50)
             {
                 unkBool1 = reader.ReadBoolean();
@@ -390,13 +451,9 @@ namespace MiloLib.Assets.Rnd
             if (revision > 27)
                 stencilMode = (StencilMode)reader.ReadInt32();
 
-            if (revision < 33)
-            {
-            }
-            else
-            {
-                fur = Symbol.Read(reader);
-            }
+            if (revision >= 29 && revision <= 40)
+                unkSym_29_40 = Symbol.Read(reader);
+            fur = Symbol.Read(reader);
 
             if (revision >= 34 && revision < 49)
             {
@@ -414,7 +471,7 @@ namespace MiloLib.Assets.Rnd
             {
                 if (standalone)
                 {
-                    if ((reader.Endianness == Endian.BigEndian ? 0xADDEADDE : 0xDEADDEAD) != reader.ReadUInt32()) throw new Exception("Got to end of standalone asset but didn't find the expected end bytes, read likely did not succeed");
+                    if ((reader.Endianness == Endian.BigEndian ? 0xADDEADDE : 0xDEADDEAD) != reader.ReadUInt32()) throw MiloLib.Exceptions.MiloAssetReadException.EndBytesNotFound(parent, entry, reader.BaseStream.Position);
                 }
                 return this;
             }
@@ -430,17 +487,40 @@ namespace MiloLib.Assets.Rnd
 
             if (revision > 38)
             {
+                if (revision < 42)
+                    unkBool_normalDetail = reader.ReadBoolean();
                 normalDetailTiling = reader.ReadFloat();
                 normalDetailStrength = reader.ReadFloat();
+                if (revision < 42)
+                {
+                    unkInt_normalDetail = reader.ReadInt32();
+                    unkColor_normalDetail = new HmxColor4().Read(reader);
+                }
                 normalDetailMap = Symbol.Read(reader);
+                if (revision < 42)
+                    unkSym_normalDetail = Symbol.Read(reader);
             }
 
-            pointLights = reader.ReadBoolean();
-            if (revision < 0x3F)
-                projLights = reader.ReadBoolean();
-            fog = reader.ReadBoolean();
-            fadeout = reader.ReadBoolean();
-            colorAdjust = reader.ReadBoolean();
+            if (revision > 42)
+            {
+                if (revision > 44)
+                {
+                    pointLights = reader.ReadBoolean();
+                }
+                else
+                {
+                    pointLightsInt = reader.ReadInt32();
+                    pointLights = pointLightsInt > 1;
+                }
+                if (revision < 0x3F)
+                    projLights = reader.ReadBoolean();
+                fog = reader.ReadBoolean();
+                fadeout = reader.ReadBoolean();
+                if (revision == 44 || revision == 45)
+                    unkBool_44_45 = reader.ReadBoolean();
+                if (revision > 46)
+                    colorAdjust = reader.ReadBoolean();
+            }
 
             if (revision > 47)
             {
@@ -454,6 +534,12 @@ namespace MiloLib.Assets.Rnd
             if (revision > 48)
                 screenAligned = reader.ReadBoolean();
 
+            if (revision == 50)
+            {
+                unkBool_shaderVar50 = reader.ReadBoolean();
+                if (unkBool_shaderVar50)
+                    shaderVariation = ShaderVariation.kShaderVariationSkin;
+            }
             if (revision > 0x32)
             {
                 shaderVariation = (ShaderVariation)reader.ReadInt32();
@@ -513,179 +599,226 @@ namespace MiloLib.Assets.Rnd
 
             if (standalone)
             {
-                if ((reader.Endianness == Endian.BigEndian ? 0xADDEADDE : 0xDEADDEAD) != reader.ReadUInt32()) throw new Exception("Got to end of standalone asset but didn't find the expected end bytes, read likely did not succeed");
+                if ((reader.Endianness == Endian.BigEndian ? 0xADDEADDE : 0xDEADDEAD) != reader.ReadUInt32()) throw MiloLib.Exceptions.MiloAssetReadException.EndBytesNotFound(parent, entry, reader.BaseStream.Position);
             }
             return this;
 
         }
-        public override void Write(EndianWriter writer, bool standalone, DirectoryMeta parent, DirectoryMeta.Entry? entry)
-        {
-            writer.WriteUInt32(BitConverter.IsLittleEndian ? (uint)((altRevision << 16) | revision) : (uint)((revision << 16) | altRevision));
+		public override void Write(EndianWriter writer, bool standalone, DirectoryMeta parent, DirectoryMeta.Entry? entry)
+		{
+			writer.WriteUInt32(
+				BitConverter.IsLittleEndian
+					? (uint)((altRevision << 16) | revision)
+					: (uint)((revision << 16) | altRevision)
+			);
 
-            base.Write(writer, false, parent, entry);
+			if (revision > 9 && revision <= 21)
+			{
+				textureCount = (uint)textures.Count;
+				writer.WriteUInt32(textureCount);
+				foreach (var tex in textures)
+					tex.Write(writer);
+			}
 
-            writer.WriteInt32((int)blend);
-            color.Write(writer);
-            writer.WriteBoolean(preLit);
-            writer.WriteBoolean(useEnviron);
-            writer.WriteInt32((int)zMode);
-            writer.WriteBoolean(alphaCut);
-            if (revision > 0x25)
-                writer.WriteInt32(alphaThreshold);
-            writer.WriteBoolean(alphaWrite);
-            writer.WriteInt32((int)texGen);
-            writer.WriteInt32((int)texWrap);
-            texXfm.Write(writer);
-            Symbol.Write(writer, diffuseTex);
-            Symbol.Write(writer, nextPass);
-            writer.WriteBoolean(intensify);
+			base.Write(writer, false, parent, entry);
 
-            writer.WriteBoolean(cull);
-            writer.WriteFloat(emissiveMultiplier);
-            specularRGB.Write(writer);
-            writer.WriteFloat(specularPower);
-            Symbol.Write(writer, normalMap);
-            Symbol.Write(writer, emissiveMap);
-            Symbol.Write(writer, specularMap);
-            if (revision < 51)
-            {
-                Symbol.Write(writer, unkSymbol2);
-            }
-            Symbol.Write(writer, environMap);
+			writer.WriteInt32((int)blend);
+			color.Write(writer);
 
-            if (revision > 25)
-            {
-                if (revision == 68)
-                    writer.WriteUInt16(unkShort);
-            }
-
-            writer.WriteBoolean(perPixelLit);
-
-            if (revision >= 27 && revision < 50)
-            {
-                writer.WriteBoolean(unkBool1);
-            }
-
-            writer.WriteInt32((int)stencilMode);
-            if (revision < 33)
-            {
-            }
-            else
-            {
-                Symbol.Write(writer, fur);
-            }
-
-            if (revision >= 34 && revision < 49)
-            {
-                writer.WriteBoolean(unkBool2);
-                unkColor3.Write(writer);
-                writer.WriteFloat(unkFloat3);
-
-                if (revision > 34)
-                {
-                    Symbol.Write(writer, unkSym3);
-                }
-            }
-
-            if (revision <= 28)
-            {
-                if (standalone)
-                {
-                    writer.WriteUInt32(writer.Endianness == Endian.BigEndian ? 0xADDEADDE : 0xDEADDEAD);
-                }
-                return;
-            }
-
-            writer.WriteFloat(deNormal);
-            writer.WriteFloat(anisotropy);
-            writer.WriteFloat(normalDetailTiling);
-            writer.WriteFloat(normalDetailStrength);
-            Symbol.Write(writer, normalDetailMap);
-
-            writer.WriteBoolean(pointLights);
-            if (revision < 0x3F)
-                writer.WriteBoolean(projLights);
-            writer.WriteBoolean(fog);
-            writer.WriteBoolean(fadeout);
-            writer.WriteBoolean(colorAdjust);
-
-            if (revision > 47)
-            {
-                rimRGB.Write(writer);
-                writer.WriteFloat(rimPower);
-
-                Symbol.Write(writer, rimMap);
-                writer.WriteBoolean(rimAlwaysShow);
-            }
-
-            if (revision > 48)
-                writer.WriteBoolean(screenAligned);
-
-            if (revision > 0x32)
-            {
-                writer.WriteInt32((int)shaderVariation);
-                specular2RGB.Write(writer);
-                writer.WriteFloat(specular2Power);
-            }
-
-            if (revision >= 52 && revision <= 67)
-            {
-                if (revision < 0x35)
-                    writer.WriteBoolean(unkBool);
-                else
-                    writer.WriteInt32(unkInt3);
-
-                if (revision >= 53 && revision <= 59)
-                {
-                    unkColor2.Write(writer);
-                }
-
-                if (revision >= 0x3C)
-                {
-                    writer.WriteUInt32((uint)colors.Count);
-                    foreach (var color in colors)
-                    {
-                        color.Write(writer);
-                    }
-                }
-
-            }
-
-            if (revision >= 54 && revision <= 61)
-            {
-                Symbol.Write(writer, unkSym2);
-            }
-
-            if (revision >= 55 && revision <= 62)
-                writer.WriteBoolean(perfSettings.ps3ForceTrilinear);
-
-            if (revision == 0x38)
-            {
-                writer.WriteInt32(unkInt1);
-                writer.WriteInt32(unkInt2);
-            }
-
-            if (revision > 0x3E)
-            {
-                perfSettings.Write(writer, revision);
-            }
-
-            if (revision > 0x3F)
-            {
-                writer.WriteBoolean(refractEnabled);
-                writer.WriteFloat(refractStrength);
-                Symbol.Write(writer, refractNormalMap);
-            }
+			if (revision <= 21)
+			{
+				writer.WriteByte(unkByte1);
+                writer.WriteUInt16(unkShort2);
+                writer.WriteInt32(unkInt4);
+                writer.WriteUInt16(unkShort3);
+                writer.WriteUInt32(unkUInt1);
+                writer.WriteUInt16(unkShort4);
 
 
+				if (standalone)
+					writer.WriteUInt32(writer.Endianness == Endian.BigEndian ? 0xADDEADDE : 0xDEADDEAD);
 
-            if (standalone)
-            {
-                writer.WriteUInt32(writer.Endianness == Endian.BigEndian ? 0xADDEADDE : 0xDEADDEAD);
-            }
-        }
+				return;
+			}
 
-        public static RndMat New(ushort revision, ushort altRevision)
+			writer.WriteBoolean(useEnviron);
+			writer.WriteBoolean(preLit);
+			writer.WriteInt32((int)zMode);
+			writer.WriteBoolean(alphaCut);
+
+			if (revision > 0x25)
+				writer.WriteInt32(alphaThreshold);
+
+			writer.WriteBoolean(alphaWrite);
+			writer.WriteInt32((int)texGen);
+			writer.WriteInt32((int)texWrap);
+			texXfm.Write(writer);
+
+			Symbol.Write(writer, diffuseTex);
+			Symbol.Write(writer, nextPass);
+			writer.WriteBoolean(intensify);
+
+			writer.WriteBoolean(cull);
+			writer.WriteFloat(emissiveMultiplier);
+			specularRGB.Write(writer);
+			writer.WriteFloat(specularPower);
+
+			Symbol.Write(writer, normalMap);
+			Symbol.Write(writer, emissiveMap);
+			Symbol.Write(writer, specularMap);
+
+			if (revision < 51)
+				Symbol.Write(writer, unkSymbol2);
+
+			Symbol.Write(writer, environMap);
+
+			if (revision > 60)
+			{
+				writer.WriteBoolean(unkBool_0x3C);
+				if (revision > 66)
+					writer.WriteBoolean(unkBool_0x42);
+			}
+
+			if (revision > 25)
+				writer.WriteBoolean(perPixelLit);
+
+			if (revision >= 27 && revision < 50)
+				writer.WriteBoolean(unkBool1);
+
+			if (revision > 27)
+				writer.WriteInt32((int)stencilMode);
+
+			if (revision >= 29 && revision <= 40)
+				Symbol.Write(writer, unkSym_29_40);
+			Symbol.Write(writer, fur);
+
+			if (revision >= 34 && revision < 49)
+			{
+				writer.WriteBoolean(unkBool2);
+				unkColor3.Write(writer);
+				writer.WriteFloat(unkFloat3);
+
+				if (revision > 34)
+					Symbol.Write(writer, unkSym3);
+			}
+
+			if (revision <= 28)
+			{
+				if (standalone)
+					writer.WriteUInt32(writer.Endianness == Endian.BigEndian ? 0xADDEADDE : 0xDEADDEAD);
+				return;
+			}
+
+			if (revision > 35)
+			{
+				writer.WriteFloat(deNormal);
+				writer.WriteFloat(anisotropy);
+			}
+
+			if (revision > 38)
+			{
+				if (revision < 42)
+					writer.WriteBoolean(unkBool_normalDetail);
+				writer.WriteFloat(normalDetailTiling);
+				writer.WriteFloat(normalDetailStrength);
+				if (revision < 42)
+				{
+					writer.WriteInt32(unkInt_normalDetail);
+					unkColor_normalDetail.Write(writer);
+				}
+				Symbol.Write(writer, normalDetailMap);
+				if (revision < 42)
+					Symbol.Write(writer, unkSym_normalDetail);
+			}
+
+			if (revision > 42)
+			{
+				if (revision > 44)
+				{
+					writer.WriteBoolean(pointLights);
+				}
+				else
+				{
+					writer.WriteInt32(pointLightsInt);
+				}
+				if (revision < 0x3F)
+					writer.WriteBoolean(projLights);
+				writer.WriteBoolean(fog);
+				writer.WriteBoolean(fadeout);
+				if (revision == 44 || revision == 45)
+					writer.WriteBoolean(unkBool_44_45);
+				if (revision > 46)
+					writer.WriteBoolean(colorAdjust);
+			}
+
+			if (revision > 47)
+			{
+				rimRGB.Write(writer);
+				writer.WriteFloat(rimPower);
+				Symbol.Write(writer, rimMap);
+				writer.WriteBoolean(rimAlwaysShow);
+			}
+
+			if (revision > 48)
+				writer.WriteBoolean(screenAligned);
+
+			if (revision == 50)
+				writer.WriteBoolean(unkBool_shaderVar50);
+
+			if (revision > 0x32)
+			{
+				writer.WriteInt32((int)shaderVariation);
+				specular2RGB.Write(writer);
+				writer.WriteFloat(specular2Power);
+			}
+
+			if (revision >= 52 && revision <= 67)
+			{
+				if (revision < 0x35)
+					writer.WriteBoolean(unkBool);
+				else
+					writer.WriteInt32(unkInt3);
+
+				if (revision >= 53 && revision <= 59)
+					unkColor2.Write(writer);
+
+				if (revision >= 0x3C)
+				{
+					// Ensure colorsCount matches the actual list size
+					colorsCount = (uint)colors.Count;
+					writer.WriteUInt32(colorsCount);
+					foreach (var c in colors)
+						c.Write(writer);
+				}
+			}
+
+			if (revision >= 54 && revision <= 61)
+				Symbol.Write(writer, unkSym2);
+
+			if (revision >= 55 && revision <= 62)
+				writer.WriteBoolean(perfSettings.ps3ForceTrilinear);
+
+			if (revision == 0x38)
+			{
+				writer.WriteInt32(unkInt1);
+				writer.WriteInt32(unkInt2);
+			}
+
+			if (revision > 0x3E)
+				perfSettings.Write(writer, revision);
+
+			if (revision > 0x3F)
+			{
+				writer.WriteBoolean(refractEnabled);
+				writer.WriteFloat(refractStrength);
+				Symbol.Write(writer, refractNormalMap);
+			}
+
+			if (standalone)
+				writer.WriteUInt32(writer.Endianness == Endian.BigEndian ? 0xADDEADDE : 0xDEADDEAD);
+		}
+
+		public static RndMat New(ushort revision, ushort altRevision)
         {
             RndMat rndMat = new RndMat();
             rndMat.revision = revision;

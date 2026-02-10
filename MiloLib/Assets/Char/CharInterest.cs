@@ -1,4 +1,4 @@
-﻿using MiloLib.Assets.Rnd;
+using MiloLib.Assets.Rnd;
 using MiloLib.Classes;
 using MiloLib.Utils;
 
@@ -75,7 +75,7 @@ namespace MiloLib.Assets.Char
             }
 
             if (standalone)
-                if ((reader.Endianness == Endian.BigEndian ? 0xADDEADDE : 0xDEADDEAD) != reader.ReadUInt32()) throw new Exception("Got to end of standalone asset but didn't find the expected end bytes, read likely did not succeed");
+                if ((reader.Endianness == Endian.BigEndian ? 0xADDEADDE : 0xDEADDEAD) != reader.ReadUInt32()) throw MiloLib.Exceptions.MiloAssetReadException.EndBytesNotFound(parent, entry, reader.BaseStream.Position);
 
             return this;
         }
@@ -86,7 +86,7 @@ namespace MiloLib.Assets.Char
 
             base.Write(writer, false, parent, entry);
 
-            trans.Write(writer, false, true);
+            trans.Write(writer, false, parent, null);
 
             writer.WriteFloat(maxViewAngle);
             writer.WriteFloat(priority);
@@ -120,7 +120,7 @@ namespace MiloLib.Assets.Char
             }
 
             if (standalone)
-                writer.WriteBlock(new byte[4] { 0xAD, 0xDE, 0xAD, 0xDE });
+                writer.WriteEndBytes();
         }
 
     }

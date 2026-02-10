@@ -94,7 +94,7 @@ namespace MiloLib.Assets.Ham
             }
 
             if (standalone)
-                if ((reader.Endianness == Endian.BigEndian ? 0xADDEADDE : 0xDEADDEAD) != reader.ReadUInt32()) throw new Exception("Got to end of standalone asset but didn't find the expected end bytes, read likely did not succeed");
+                if ((reader.Endianness == Endian.BigEndian ? 0xADDEADDE : 0xDEADDEAD) != reader.ReadUInt32()) throw MiloLib.Exceptions.MiloAssetReadException.EndBytesNotFound(parent, entry, reader.BaseStream.Position);
 
             return this;
         }
@@ -110,7 +110,7 @@ namespace MiloLib.Assets.Ham
             Symbol.Write(writer, mDisplayName);
             writer.WriteUInt32((uint)mDifficulty);
 
-            writer.WriteUInt32(numSteps);
+            writer.WriteUInt32((uint)mSteps.Count);
             foreach (var step in mSteps)
             {
                 step.Write(writer, revision);
@@ -118,7 +118,7 @@ namespace MiloLib.Assets.Ham
 
             if (revision > 1)
             {
-                writer.WriteUInt32(numSeqs);
+                writer.WriteUInt32((uint)mSeqs.Count);
                 foreach (var seq in mSeqs)
                 {
                     seq.Write(writer, false, parent, entry);
@@ -127,7 +127,7 @@ namespace MiloLib.Assets.Ham
             }
 
             if (standalone)
-                writer.WriteBlock(new byte[4] { 0xAD, 0xDE, 0xAD, 0xDE });
+                writer.WriteEndBytes();
         }
     }
 }

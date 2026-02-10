@@ -2,6 +2,7 @@
 // license in Utils/Endian/LICENSE.md
 
 using System;
+using System.Buffers.Binary;
 using System.IO;
 using System.Text;
 
@@ -202,15 +203,10 @@ namespace MiloLib.Utils
         {
             Half half = (Half)value;
             if (_bigEndian)
-            {
-                byte[] bytes = BitConverter.GetBytes(half);
-                _stream.Write(bytes.Reverse().ToArray(), 0, bytes.Length);
-            }
+                BinaryPrimitives.WriteHalfBigEndian(_buffer, half);
             else
-            {
-                byte[] bytes = BitConverter.GetBytes(half);
-                _stream.Write(bytes, 0, bytes.Length);
-            }
+                BinaryPrimitives.WriteHalfLittleEndian(_buffer, half);
+            _stream.Write(_buffer, 0, 2);
         }
 
         /// <summary>
@@ -220,20 +216,13 @@ namespace MiloLib.Utils
         ///  <exception cref="IOException">Thrown if there is an issue writing to the stream.</exception>
         public void WriteFloat(float value)
         {
-            byte[] bytes = BitConverter.GetBytes(value);
-            if (BitConverter.IsLittleEndian == _bigEndian)
-            {
-                // Is there a faster way to do this?
-                byte temp = bytes[0];
-                bytes[0] = bytes[3];
-                bytes[3] = temp;
-                temp = bytes[1];
-                bytes[1] = bytes[2];
-                bytes[2] = temp;
-            }
+            if (_bigEndian)
+                BinaryPrimitives.WriteSingleBigEndian(_buffer, value);
+            else
+                BinaryPrimitives.WriteSingleLittleEndian(_buffer, value);
             try
             {
-                _stream.Write(bytes, 0, bytes.Length);
+                _stream.Write(_buffer, 0, 4);
             }
             catch (Exception e)
             {
@@ -280,10 +269,7 @@ namespace MiloLib.Utils
 
             WriteBlock(bytes);
             int padding = length - bytes.Length;
-            for (int i = 0; i < padding; i++)
-            {
-                WriteByte(0);
-            }
+            WriteBlock(new byte[padding]);
         }
 
         /// <summary>
@@ -318,8 +304,8 @@ namespace MiloLib.Utils
         ///  <exception cref="IOException">Thrown if there is an issue writing to the stream.</exception>
         public void WriteUTF16(string str)
         {
-            foreach (char ch in str)
-                WriteInt16((short)ch);
+            byte[] bytes = (_bigEndian ? Encoding.BigEndianUnicode : Encoding.Unicode).GetBytes(str);
+            WriteBlock(bytes);
             WriteInt16(0x0000);
         }
 
@@ -338,6 +324,25 @@ namespace MiloLib.Utils
             {
                 throw new IOException($"An IO exception occured during write", e);
             }
+        }
+
+        /// <summary>
+        ///     Writes a span of bytes to the stream.
+        /// </summary>
+        /// <param name="buffer">The span to write.</param>
+        public void WriteBlock(ReadOnlySpan<byte> buffer)
+        {
+            _stream.Write(buffer);
+        }
+
+        private static readonly byte[] _endBytes = { 0xAD, 0xDE, 0xAD, 0xDE };
+
+        /// <summary>
+        ///     Writes the Milo end-of-object marker bytes (0xADDEADDE) to the stream.
+        /// </summary>
+        public void WriteEndBytes()
+        {
+            _stream.Write(_endBytes, 0, 4);
         }
 
         /// <summary>

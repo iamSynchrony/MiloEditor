@@ -1,4 +1,4 @@
-﻿using MiloLib.Assets.Rnd;
+using MiloLib.Assets.Rnd;
 using MiloLib.Classes; // Added for attributes
 using MiloLib.Utils;
 using System; // Added for Exception, BitConverter
@@ -246,7 +246,7 @@ namespace MiloLib.Assets
 
 
             if (standalone)
-                if ((reader.Endianness == Endian.BigEndian ? 0xADDEADDE : 0xDEADDEAD) != reader.ReadUInt32()) throw new Exception("Got to end of standalone asset but didn't find the expected end bytes, read likely did not succeed");
+                if ((reader.Endianness == Endian.BigEndian ? 0xADDEADDE : 0xDEADDEAD) != reader.ReadUInt32()) throw MiloLib.Exceptions.MiloAssetReadException.EndBytesNotFound(parent, entry, reader.BaseStream.Position);
 
             return this;
         }
@@ -263,7 +263,7 @@ namespace MiloLib.Assets
             base.Write(writer, false, parent, entry);
 
             if (revision != 0)
-                draw.Write(writer, false, true);
+                draw.Write(writer, false, parent, null);
 
             writer.WriteUInt32(meshCount);
             for (int i = 0; i < meshCount; i++)
@@ -363,7 +363,7 @@ namespace MiloLib.Assets
 
 
             if (standalone)
-                writer.WriteBlock(new byte[4] { 0xAD, 0xDE, 0xAD, 0xDE });
+                writer.WriteEndBytes();
         }
 
         public static TrackWidget New(ushort revision, ushort altRevision)

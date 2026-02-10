@@ -1,4 +1,5 @@
-﻿using MiloLib.Classes;
+using MiloLib.Assets.World;
+using MiloLib.Classes;
 using MiloLib.Utils;
 using System;
 using System.Collections.Generic;
@@ -78,6 +79,8 @@ namespace MiloLib.Assets
 
         [Name("Inline Sub Directories"), MinVersion(21)]
         public List<DirectoryMeta> inlineSubDirs = new List<DirectoryMeta>();
+
+        public List<bool> inlineCachedBooleans = new();
 
         [Name("Unknown String 1"), MinVersion(3), MaxVersion(10)]
         public Symbol unknownString = new(0, "");
@@ -183,10 +186,12 @@ namespace MiloLib.Assets
             {
                 if (revision > 19)
                 {
-                    if(revision < 28) {
+                    if (revision < 28)
+                    {
                         inlineProxy = reader.ReadBoolean();
                     }
-                    else {
+                    else
+                    {
                         inlineProxy = Convert.ToBoolean(reader.ReadByte());
                     }
                 }
@@ -263,15 +268,15 @@ namespace MiloLib.Assets
                         {
                             DirectoryMeta inlinedSubDir = new DirectoryMeta();
                             inlinedSubDir.platform = parent.platform;
-                            // check if the reference types are actually there to avoid an out of bounds exception
-                            if (referenceTypes.Count > 0 && referenceTypesAlt.Count > 0)
+                            if (referenceTypes.Count > i && referenceTypesAlt.Count > i)
                             {
-                                if (referenceTypes[0] == ReferenceType.kInlineCached && referenceTypesAlt[0] == ReferenceType.kInlineCached)
+                                if (referenceTypes[i] == ReferenceType.kInlineCached && referenceTypesAlt[i] == ReferenceType.kInlineCached)
                                 {
-                                    reader.ReadBoolean();
+                                    inlineCachedBooleans.Add(reader.ReadBoolean());
                                 }
                             }
-                            if (referenceTypes[0] == ReferenceType.kInlineCachedShared && referenceTypesAlt[0] == ReferenceType.kInlineCached)
+                            if (referenceTypes.Count > i && referenceTypesAlt.Count > i &&
+                                referenceTypes[i] == ReferenceType.kInlineCachedShared && referenceTypesAlt[i] == ReferenceType.kInlineCached)
                             {
                             }
                             else
@@ -301,7 +306,13 @@ namespace MiloLib.Assets
             }
 
 
-            if (entry.type.value == "WorldInstance")
+            // hack...sigh
+            if (entry.type.value == "WorldInstance" &&
+            this is WorldInstance worldInstanceRead && worldInstanceRead.revision != 0 &&
+            !(this.referenceTypes.Count > 0 &&
+                this.referenceTypesAlt.Count > 0 &&
+                this.referenceTypes[0] == ReferenceType.kInlineCached &&
+                this.referenceTypesAlt[0] == ReferenceType.kInlineCached))
             {
                 hasPersistentObjects = reader.ReadBoolean();
                 if (entry.isProxy)
@@ -328,7 +339,7 @@ namespace MiloLib.Assets
             if (standalone)
             {
                 // read past padding
-                if ((reader.Endianness == Endian.BigEndian ? 0xADDEADDE : 0xDEADDEAD) != reader.ReadUInt32()) throw new Exception("Got to end of standalone asset but didn't find the expected end bytes, read likely did not succeed");
+                if ((reader.Endianness == Endian.BigEndian ? 0xADDEADDE : 0xDEADDEAD) != reader.ReadUInt32()) throw MiloLib.Exceptions.MiloAssetReadException.EndBytesNotFound(parent, entry, reader.BaseStream.Position);
             }
 
             return this;
@@ -342,14 +353,21 @@ namespace MiloLib.Assets
             {
                 if (revision >= 2 && revision < 17)
                 {
-                    objFields.Write(writer);
+                    objFields.Write(writer, parent);
                 }
             }
             else
             {
-                writer.WriteUInt16(objFields.altRevision);
-                writer.WriteUInt16(objFields.revision);
-                Symbol.Write(writer, objFields.type);
+                if (revision != 26)
+                {
+                    writer.WriteUInt16(objFields.altRevision);
+                    writer.WriteUInt16(objFields.revision);
+                    Symbol.Write(writer, objFields.type);
+                }
+                else
+                {
+                    objFields.Write(writer, parent);
+                }
             }
 
             if (revision > 1)
@@ -404,13 +422,13 @@ namespace MiloLib.Assets
                 if (revision >= 21)
                 {
                     writer.WriteByte((byte)inlineSubDir);
-                    writer.WriteUInt32((uint)inlineSubDirs.Count);
+                    writer.WriteUInt32((uint)inlineSubDirNames.Count);
                     foreach (var inlineSubDirName in inlineSubDirNames)
                     {
                         Symbol.Write(writer, inlineSubDirName);
                     }
 
-                    if (revision >= 27)
+                    if (revision >= 26)
                     {
                         foreach (var referenceType in referenceTypes)
                         {
@@ -424,17 +442,26 @@ namespace MiloLib.Assets
                     }
 
 
-                    foreach (var inlineSubDir in inlineSubDirs)
+                    int inlineIdx = 0;
+                    int cachedBoolIdx = 0;
+                    for (int i = 0; i < inlineSubDirNames.Count; i++)
                     {
-                        // bounds check
-                        if (referenceTypes.Count > 0 && referenceTypesAlt.Count > 0)
+                        if (referenceTypes.Count > i && referenceTypesAlt.Count > i)
                         {
-                            if (referenceTypes[0] == ReferenceType.kInlineCached && referenceTypesAlt[0] == ReferenceType.kInlineCached)
+                            if (referenceTypes[i] == ReferenceType.kInlineCached && referenceTypesAlt[i] == ReferenceType.kInlineCached)
                             {
-                                writer.WriteBoolean(false);
+                                writer.WriteBoolean(cachedBoolIdx < inlineCachedBooleans.Count ? inlineCachedBooleans[cachedBoolIdx++] : false);
                             }
                         }
-                        inlineSubDir.Write(writer);
+                        if (referenceTypes.Count > i && referenceTypesAlt.Count > i &&
+                            referenceTypes[i] == ReferenceType.kInlineCachedShared && referenceTypesAlt[i] == ReferenceType.kInlineCached)
+                        {
+                        }
+                        else
+                        {
+                            if (inlineIdx < inlineSubDirs.Count)
+                                inlineSubDirs[inlineIdx++].Write(writer);
+                        }
                     }
                 }
             }
@@ -454,7 +481,12 @@ namespace MiloLib.Assets
                 }
             }
 
-            if (entry != null && entry.type.value == "WorldInstance")
+            if (entry != null && entry.type.value == "WorldInstance" &&
+                this is WorldInstance wiWrite && wiWrite.revision != 0 &&
+                !(this.referenceTypes.Count > 0 &&
+                    this.referenceTypesAlt.Count > 0 &&
+                    this.referenceTypes[0] == ReferenceType.kInlineCached &&
+                    this.referenceTypesAlt[0] == ReferenceType.kInlineCached))
             {
                 writer.WriteBoolean(hasPersistentObjects);
                 if (entry.isProxy)
@@ -468,7 +500,7 @@ namespace MiloLib.Assets
             {
                 if (revision > 16)
                 {
-                    objFields.Write(writer);
+                    objFields.Write(writer, parent);
                 }
             }
             else
@@ -480,7 +512,7 @@ namespace MiloLib.Assets
 
             if (standalone)
             {
-                writer.WriteBlock(new byte[4] { 0xAD, 0xDE, 0xAD, 0xDE });
+                writer.WriteEndBytes();
             }
         }
 

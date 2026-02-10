@@ -1,4 +1,4 @@
-﻿using MiloLib.Classes;
+using MiloLib.Classes;
 using MiloLib.Utils;
 
 namespace MiloLib.Assets.UI
@@ -8,6 +8,8 @@ namespace MiloLib.Assets.UI
     {
         private ushort altRevision;
         private ushort revision;
+
+        private uint unkPreBase;
 
         public uint viewTimeEasy;
         public uint viewTimeExpert;
@@ -29,7 +31,7 @@ namespace MiloLib.Assets.UI
             if (BitConverter.IsLittleEndian) (revision, altRevision) = ((ushort)(combinedRevision & 0xFFFF), (ushort)(combinedRevision >> 16 & 0xFFFF));
             else (altRevision, revision) = ((ushort)(combinedRevision & 0xFFFF), (ushort)(combinedRevision >> 16 & 0xFFFF));
 
-            reader.ReadUInt32();
+            unkPreBase = reader.ReadUInt32();
 
             base.Read(reader, false, parent, entry);
 
@@ -44,7 +46,7 @@ namespace MiloLib.Assets.UI
             }
 
             if (standalone)
-                if ((reader.Endianness == Endian.BigEndian ? 0xADDEADDE : 0xDEADDEAD) != reader.ReadUInt32()) throw new Exception("Got to end of standalone asset but didn't find the expected end bytes, read likely did not succeed");
+                if ((reader.Endianness == Endian.BigEndian ? 0xADDEADDE : 0xDEADDEAD) != reader.ReadUInt32()) throw MiloLib.Exceptions.MiloAssetReadException.EndBytesNotFound(parent, entry, reader.BaseStream.Position);
 
             return this;
         }
@@ -53,15 +55,20 @@ namespace MiloLib.Assets.UI
         {
             writer.WriteUInt32(BitConverter.IsLittleEndian ? (uint)(altRevision << 16 | revision) : (uint)(revision << 16 | altRevision));
 
+            writer.WriteUInt32(unkPreBase);
+
             base.Write(writer, false, parent, entry);
 
-            writer.WriteUInt32(0);
-            writer.WriteUInt32(0);
-            writer.WriteUInt32(0);
-            writer.WriteUInt32(0);
+            writer.WriteUInt32(viewTimeEasy);
+            writer.WriteUInt32(viewTimeExpert);
+            writer.WriteFloat(netTrackAlpha);
+
+            writer.WriteUInt32((uint)configurableObjects.Count);
+            foreach (var obj in configurableObjects)
+                Symbol.Write(writer, obj);
 
             if (standalone)
-                writer.WriteBlock(new byte[4] { 0xAD, 0xDE, 0xAD, 0xDE });
+                writer.WriteEndBytes();
         }
 
         public override bool IsDirectory()

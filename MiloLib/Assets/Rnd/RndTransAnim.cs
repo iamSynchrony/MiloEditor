@@ -1,4 +1,4 @@
-﻿using MiloLib.Classes;
+using MiloLib.Classes;
 using MiloLib.Utils;
 using static MiloLib.Assets.Rnd.PropKey;
 
@@ -50,7 +50,7 @@ namespace MiloLib.Assets.Rnd
 
             trans = Symbol.Read(reader);
 
-            if (revision != 2)
+            if (revision > 2)
             {
                 uint rotKeyCount = reader.ReadUInt32();
                 for (int i = 0; i < rotKeyCount; i++)
@@ -156,11 +156,11 @@ namespace MiloLib.Assets.Rnd
             anim.Write(writer);
 
             if (revision < 6)
-                draw.Write(writer, false, parent, entry);
+                draw.Write(writer, false, parent);
 
             Symbol.Write(writer, trans);
 
-            if (revision != 2)
+            if (revision > 2)
             {
                 writer.WriteUInt32((uint)rotKeys.Count);
                 foreach (var qk in rotKeys) qk.Write(writer);
@@ -219,7 +219,7 @@ namespace MiloLib.Assets.Rnd
                 writer.WriteBoolean(rotSpline);
 
             if (standalone)
-                writer.WriteBlock(new byte[4] { 0xAD, 0xDE, 0xAD, 0xDE });
+                writer.WriteEndBytes();
         }
     }
 }

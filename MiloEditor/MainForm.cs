@@ -697,7 +697,7 @@ namespace MiloEditor
 
 
                 // create a new entry
-                DirectoryMeta.Entry entry = Entry.CreateDirtyAssetFromBytes(assetType, Path.GetFileName(openFileDialog.FileName), fileBytes.ToList<byte>());
+                DirectoryMeta.Entry entry = Entry.CreateDirtyAssetFromBytes(assetType, Path.GetFileName(openFileDialog.FileName), fileBytes);
 
                 // add the entry to the parent dir
                 directoryEntry.entries.Add(entry);
@@ -792,7 +792,7 @@ namespace MiloEditor
 
                     if (saveFileDialog.ShowDialog() == DialogResult.OK)
                     {
-                        currentMiloScene.Save(saveFileDialog.FileName, miloSaveOptionsForm.compressionType, 0x810, Endian.LittleEndian, miloSaveOptionsForm.useBigEndian ? Endian.BigEndian : Endian.LittleEndian);
+                        currentMiloScene.Save(saveFileDialog.FileName, miloSaveOptionsForm.compressionType, null, Endian.LittleEndian, miloSaveOptionsForm.useBigEndian ? Endian.BigEndian : Endian.LittleEndian);
                         MessageBox.Show("Milo scene saved to " + saveFileDialog.FileName + " successfully!", "Success", MessageBoxButtons.OK, MessageBoxIcon.Information);
                     }
                     else

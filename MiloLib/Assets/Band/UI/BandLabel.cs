@@ -1,4 +1,4 @@
-﻿using MiloLib.Assets.Rnd;
+using MiloLib.Assets.Rnd;
 using MiloLib.Classes;
 using MiloLib.Utils;
 using System.Reflection.PortableExecutable;
@@ -31,10 +31,15 @@ namespace MiloLib.Assets.UI
 
         private uint oldLabelColorNum;
 
+        private ushort oldBandTextCompRevision;
+        private ushort oldBandTextCompAltRevision;
+
         public int unkInt1;
         public int unkInt2;
         public int unkInt3;
         public int unkInt4;
+
+        public Symbol unkSymbolRev6 = new(0, "");
 
         public bool unkBool87;
         public bool unkBool88;
@@ -46,6 +51,9 @@ namespace MiloLib.Assets.UI
 
         public int unkInt50;
         public int unkInt6C;
+
+        public int unkIntRevLt10;
+        public int unkIntRevLtE;
 
         public float unkFloatWidth;
         public float unkFloatHeight;
@@ -103,7 +111,7 @@ namespace MiloLib.Assets.UI
 
                 if (revision <= 6)
                 {
-                    Symbol s = Symbol.Read(reader);
+                    unkSymbolRev6 = Symbol.Read(reader);
                 }
 
                 if (revision != 0) unkBool87 = reader.ReadBoolean();
@@ -111,7 +119,7 @@ namespace MiloLib.Assets.UI
 
                 if (revision <= 6) textToken = Symbol.Read(reader);
 
-                if (revision < 10) reader.ReadInt32();
+                if (revision < 10) unkIntRevLt10 = reader.ReadInt32();
 
                 if (revision > 8)
                 {
@@ -166,7 +174,7 @@ namespace MiloLib.Assets.UI
                     unkFloatTextSize = reader.ReadFloat();
                 }
 
-                if (revision < 0xE) reader.ReadInt32();
+                if (revision < 0xE) unkIntRevLtE = reader.ReadInt32();
 
                 if (revision < 0xF)
                 {
@@ -193,23 +201,23 @@ namespace MiloLib.Assets.UI
             }
 
             if (standalone)
-                if ((reader.Endianness == Endian.BigEndian ? 0xADDEADDE : 0xDEADDEAD) != reader.ReadUInt32()) throw new Exception("Got to end of standalone asset but didn't find the expected end bytes, read likely did not succeed");
+                if ((reader.Endianness == Endian.BigEndian ? 0xADDEADDE : 0xDEADDEAD) != reader.ReadUInt32()) throw MiloLib.Exceptions.MiloAssetReadException.EndBytesNotFound(parent, entry, reader.BaseStream.Position);
 
             return this;
         }
         public void LoadOldBandTextComp(EndianReader reader)
         {
             uint combinedRevision = reader.ReadUInt32();
-            if (BitConverter.IsLittleEndian) (revision, altRevision) = ((ushort)(combinedRevision & 0xFFFF), (ushort)((combinedRevision >> 16) & 0xFFFF));
-            else (altRevision, revision) = ((ushort)(combinedRevision & 0xFFFF), (ushort)((combinedRevision >> 16) & 0xFFFF));
+            if (BitConverter.IsLittleEndian) (oldBandTextCompRevision, oldBandTextCompAltRevision) = ((ushort)(combinedRevision & 0xFFFF), (ushort)((combinedRevision >> 16) & 0xFFFF));
+            else (oldBandTextCompAltRevision, oldBandTextCompRevision) = ((ushort)(combinedRevision & 0xFFFF), (ushort)((combinedRevision >> 16) & 0xFFFF));
 
-            if (revision > 2)
+            if (oldBandTextCompRevision > 2)
             {
                 return;
             }
             else
             {
-                if (revision < 1)
+                if (oldBandTextCompRevision < 1)
                 {
                     unkInt1 = reader.ReadInt32();
                     unkInt1 = reader.ReadInt32();
@@ -220,7 +228,7 @@ namespace MiloLib.Assets.UI
                 if (oldLabelType == "custom_colors")
                 {
                     oldLabelColorNum = 4;
-                    if (revision >= 2) oldLabelColorNum = reader.ReadUInt32();
+                    if (oldBandTextCompRevision >= 2) oldLabelColorNum = reader.ReadUInt32();
                     for (int i = 0; i < oldLabelColorNum; i++) dummy = reader.ReadInt32();
                 }
             }
@@ -228,14 +236,14 @@ namespace MiloLib.Assets.UI
 
         public void WriteOldBandTextComp(EndianWriter writer)
         {
-            writer.WriteUInt32(BitConverter.IsLittleEndian ? (uint)((altRevision << 16) | revision) : (uint)((revision << 16) | altRevision));
-            if (revision > 2)
+            writer.WriteUInt32(BitConverter.IsLittleEndian ? (uint)((oldBandTextCompAltRevision << 16) | oldBandTextCompRevision) : (uint)((oldBandTextCompRevision << 16) | oldBandTextCompAltRevision));
+            if (oldBandTextCompRevision > 2)
             {
                 return;
             }
             else
             {
-                if (revision < 1)
+                if (oldBandTextCompRevision < 1)
                 {
                     writer.WriteInt32(unkInt1);
                     writer.WriteInt32(unkInt1);
@@ -245,7 +253,7 @@ namespace MiloLib.Assets.UI
                 Symbol.Write(writer, oldLabelType);
                 if (oldLabelType == "custom_colors")
                 {
-                    if (revision >= 2) writer.WriteUInt32(oldLabelColorNum);
+                    if (oldBandTextCompRevision >= 2) writer.WriteUInt32(oldLabelColorNum);
                     for (int i = 0; i < oldLabelColorNum; i++) writer.WriteInt32(dummy);
                 }
             }
@@ -254,13 +262,23 @@ namespace MiloLib.Assets.UI
         {
             writer.WriteUInt32(BitConverter.IsLittleEndian ? (uint)((altRevision << 16) | revision) : (uint)((revision << 16) | altRevision));
 
+            // Pre-apply lossy transforms so base UILabel.Write outputs consistent values
+            if (revision < 0xD)
+            {
+                capsMode = (CapsModes)(unkBool87 ? 2 : 0);
+            }
+            if (revision < 0xB && revision > 5 && revision < 10)
+            {
+                fitType = unkBool88 ? LabelFitTypes.kFitJust : 0;
+            }
+
             if (revision < 0xB)
             {
                 if (revision <= 6)
                 {
                     // Write Trans and Drawable members
-                    trans.Write(writer, false, true);
-                    draw.Write(writer, false, true);
+                    trans.Write(writer, false, parent, null);
+                    draw.Write(writer, false, parent, null);
                 }
                 else
                 {
@@ -294,12 +312,12 @@ namespace MiloLib.Assets.UI
                     writer.WriteInt32(unkIntL);
                 }
 
-                if (revision <= 6) Symbol.Write(writer, new Symbol(0, ""));
-                writer.WriteBoolean(unkBool87);
+                if (revision <= 6) Symbol.Write(writer, unkSymbolRev6);
+                if (revision != 0) writer.WriteBoolean(unkBool87);
 
                 if (revision <= 6) Symbol.Write(writer, textToken);
 
-                if (revision < 10) writer.WriteInt32(0);
+                if (revision < 10) writer.WriteInt32(unkIntRevLt10);
 
                 if (revision > 8)
                 {
@@ -322,8 +340,16 @@ namespace MiloLib.Assets.UI
                 if (revision < 0xE)
                 {
                     writer.WriteInt32((int)fitType);
-                    writer.WriteFloat(unkFloatWidth);
-                    writer.WriteFloat(unkFloatHeight);
+                    if (fitType == 0)
+                    {
+                        writer.WriteFloat(0);
+                        writer.WriteFloat(0);
+                    }
+                    else
+                    {
+                        writer.WriteFloat(unkFloatWidth);
+                        writer.WriteFloat(unkFloatHeight);
+                    }
                 }
 
                 if (revision < 0xD)
@@ -347,7 +373,7 @@ namespace MiloLib.Assets.UI
                     writer.WriteFloat(unkFloatTextSize);
                 }
 
-                if (revision < 0xE) writer.WriteInt32(0);
+                if (revision < 0xE) writer.WriteInt32(unkIntRevLtE);
 
                 if (revision < 0xF)
                 {
@@ -356,12 +382,6 @@ namespace MiloLib.Assets.UI
                     writer.WriteFloat(unkFloatColB);
                     writer.WriteFloat(unkFloatColA);
                 }
-            }
-
-            if (revision < 0xD)
-            {
-                int capsmode = unkBool87 ? 2 : 0;
-                writer.WriteInt32((int)capsMode);
             }
 
             if (revision == 0xF)
@@ -376,7 +396,7 @@ namespace MiloLib.Assets.UI
             }
 
             if (standalone)
-                writer.WriteBlock(new byte[4] { 0xAD, 0xDE, 0xAD, 0xDE });
+                writer.WriteEndBytes();
         }
 
     }

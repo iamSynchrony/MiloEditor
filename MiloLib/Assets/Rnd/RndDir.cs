@@ -1,4 +1,5 @@
-﻿using MiloLib.Utils;
+using MiloLib.Assets.World;
+using MiloLib.Utils;
 using MiloLib.Classes;
 
 namespace MiloLib.Assets.Rnd
@@ -51,7 +52,8 @@ namespace MiloLib.Assets.Rnd
             // TODO: investigate if this is just for RB3/DC1 or others too
             if (entry.isProxy && entry.type.value != "Character" && entry.type.value != "RndDir" && entry.type.value != "BandCrowdMeterDir" && entry.type.value != "CrowdMeterIcon" && entry.type.value != "EndingBonusDir" && entry.type.value != "UnisonIcon" && entry.type.value != "BandScoreboard" && entry.type.value != "BandStarDisplay" && entry.type.value != "PanelDir" && entry.type.value != "MoveDir" && entry.type.value != "SkeletonDir" && entry.type.value != "WorldDir" && entry.type.value != "VocalTrackDir" && entry.type.value != "OvershellDir" && entry.type.value != "BandCharacter" && entry.type.value != "GemTrackDir" && entry.type.value != "OverdriveMeterDir" && entry.type.value != "StreakMeterDir" && entry.type.value != "PitchArrowDir")
             {
-                return this;
+                if (!(this is WorldInstance wiRev0Read && wiRev0Read.revision == 0))
+                    return this;
             }
 
             anim = anim.Read(reader, parent, entry);
@@ -81,7 +83,7 @@ namespace MiloLib.Assets.Rnd
             }
 
             if (standalone)
-                if ((reader.Endianness == Endian.BigEndian ? 0xADDEADDE : 0xDEADDEAD) != reader.ReadUInt32()) throw new Exception("Got to end of standalone asset but didn't find the expected end bytes, read likely did not succeed");
+                if ((reader.Endianness == Endian.BigEndian ? 0xADDEADDE : 0xDEADDEAD) != reader.ReadUInt32()) throw MiloLib.Exceptions.MiloAssetReadException.EndBytesNotFound(parent, entry, reader.BaseStream.Position);
 
             return this;
         }
@@ -94,12 +96,15 @@ namespace MiloLib.Assets.Rnd
 
             if (entry.isProxy && entry.type.value != "Character" && entry.type.value != "RndDir" && entry.type.value != "BandCrowdMeterDir" && entry.type.value != "CrowdMeterIcon" && entry.type.value != "EndingBonusDir" && entry.type.value != "UnisonIcon" && entry.type.value != "BandScoreboard" && entry.type.value != "BandStarDisplay" && entry.type.value != "PanelDir" && entry.type.value != "MoveDir" && entry.type.value != "SkeletonDir" && entry.type.value != "WorldDir" && entry.type.value != "VocalTrackDir" && entry.type.value != "OvershellDir" && entry.type.value != "BandCharacter" && entry.type.value != "GemTrackDir" && entry.type.value != "OverdriveMeterDir" && entry.type.value != "StreakMeterDir" && entry.type.value != "PitchArrowDir")
             {
-                return;
+                // hack
+                if (!(this is WorldInstance rev0WorldInstance && rev0WorldInstance.revision == 0))
+                    return;
             }
 
             anim.Write(writer);
-            draw.Write(writer, false, true);
-            trans.Write(writer, false, true);
+            draw.Write(writer, false, parent, null);
+            if (revision != 0)
+                trans.Write(writer, false, parent, null);
 
             if (revision < 9)
             {
@@ -124,7 +129,7 @@ namespace MiloLib.Assets.Rnd
 
             if (standalone)
             {
-                writer.WriteBlock(new byte[4] { 0xAD, 0xDE, 0xAD, 0xDE });
+                writer.WriteEndBytes();
             }
 
         }
