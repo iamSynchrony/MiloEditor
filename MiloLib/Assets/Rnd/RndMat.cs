@@ -125,11 +125,11 @@ namespace MiloLib.Assets.Rnd
         [Name("Base Color"), Description("Base material color")]
         public HmxColor4 color = new HmxColor4(1f, 1f, 1f, 1f);
 
-        [Name("Use Environment"), Description("Modulate with environment ambient and lightsReal"), MinVersion(22)]
-        public bool useEnviron;
-
         [Name("Pre-Lit"), Description("Use vertex color and alpha for base or ambient"), MinVersion(22)]
         public bool preLit;
+        
+        [Name("Use Environment"), Description("Modulate with environment ambient and lightsReal"), MinVersion(22)]
+        public bool useEnviron;
 
         [Name("Z-Buffer Mode"), Description("How to read and write z-buffer"), MinVersion(22)]
         public ZMode zMode;
@@ -404,8 +404,8 @@ namespace MiloLib.Assets.Rnd
                 return this;
             }
 
-            useEnviron = reader.ReadBoolean();
             preLit = reader.ReadBoolean();
+            useEnviron = reader.ReadBoolean();
             zMode = (ZMode)reader.ReadInt32();
             alphaCut = reader.ReadBoolean();
             if (revision > 0x25)
@@ -641,8 +641,8 @@ namespace MiloLib.Assets.Rnd
 				return;
 			}
 
-			writer.WriteBoolean(useEnviron);
 			writer.WriteBoolean(preLit);
+			writer.WriteBoolean(useEnviron);
 			writer.WriteInt32((int)zMode);
 			writer.WriteBoolean(alphaCut);
 
